@@ -29,4 +29,8 @@ return [
         'tag' => \App\Data\TagData::class,
         'silo' => \App\Data\SiloData::class,
     ],
+
+    'input' => [
+        'silo' => \App\Data\SiloInputData::class,
+    ],
 ];
