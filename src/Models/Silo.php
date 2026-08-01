@@ -15,6 +15,9 @@ use Laravel\Scout\Searchable;
 use Rushing\PermissionCascade\Concerns\HasVisibility;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasTags;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
+use Splicewire\Beam\Taxonomy\Sync\SiloSyncData;
+use Splicewire\Sync\Contracts\SyncLineageResolver;
+use Splicewire\Sync\Contracts\Syncable;
 use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 use Symfony\Component\Uid\Uuid;
 
@@ -25,15 +28,20 @@ use Symfony\Component\Uid\Uuid;
  * issue 17 P2). This base carries the PORTABLE core: uuid + slug + adjacency-list nesting +
  * visibility cascade + name-path + golden-eval markers + the string/id resolution helpers.
  *
- * Two host-coupled bands stay on the `App\Models\Silo` subclass in tower-core, behind their
- * ports, so this foundation never reaches UP:
- *   - the tower relations (`fragments`, `recursiveFragments`, `concepts`, `rules`, `evidence`)
- *     which target tower-core models; and
- *   - the tenant-sync surface (`Splicewire\Sync\Syncable` + `toSyncData`/`fromSyncPayload`),
- *     which references the tower-tenancy `SiloSyncData` transit DTO + the tenant lineage table
- *     (the Particle-pipeline sync bridge is deferred to follow-on issue 19 / design U4).
+ * Since U4a the tenant-sync surface (`Splicewire\Sync\Syncable` + `toSyncData`/`fromSyncPayload`)
+ * is implemented HERE natively, over the relocated beam {@see SiloSyncData} — using only
+ * beam-taxonomy + beam-sync + foundation types. The one FK a synced silo carries (its parent) is
+ * remapped through the {@see SyncLineageResolver} PORT passed in `$config`, so this base never
+ * names the tower-tenancy `TenantSyncLineage` store; the tenant TARGET supplies the concrete
+ * resolver. `syncDependencies` resolves the parent against `static::class` (the runtime class), so
+ * a polymorphic apply on the App subclass keys lineage on the same class it always did.
+ *
+ * ONE host-coupled band stays on the `App\Models\Silo` subclass in tower-core, so this foundation
+ * never reaches UP: the tower relations (`fragments`, `recursiveFragments`, `concepts`, `rules`,
+ * `evidence`) which target tower-core models. The deeper Particle-pipeline sync-in bridge is
+ * deferred to follow-on issue 19 (design U4).
  */
-class Silo extends Model
+class Silo extends Model implements Syncable
 {
     use Filterable;
     use HasFactory;
@@ -254,5 +262,64 @@ class Silo extends Model
     public static function goldenSlugFor(string $vertical): string
     {
         return static::GOLDEN_SLUG_PREFIX.$vertical;
+    }
+
+    // -------------------------------------------------------------------------
+    // Syncable (native — relocated DOWN from App\Models\Silo in issue 17 U4a).
+    // The parent FK is remapped through the SyncLineageResolver port from $config,
+    // so this base never names the tower-tenancy lineage store.
+    // -------------------------------------------------------------------------
+
+    public function toSyncPayload(): array
+    {
+        return $this->toSyncData()->toArray();
+    }
+
+    public function toSyncData(): SiloSyncData
+    {
+        return new SiloSyncData(
+            hash: $this->syncHash(),
+            name: $this->name,
+            slug: $this->slug,
+            sourceParentId: $this->parent_id,
+        );
+    }
+
+    public static function fromSyncPayload(array $data, array $config = []): static
+    {
+        $payload = SiloSyncData::from($data);
+
+        // Remap the source parent id to its target-local id through the lineage resolver the
+        // target supplied (a tenant target keys this on TenantSyncLineage). Absent a resolver
+        // (headless / no-remap apply), the parent is left unresolved.
+        $parentId = null;
+        if ($payload->sourceParentId) {
+            $resolver = $config[SyncLineageResolver::CONFIG_KEY] ?? null;
+            if ($resolver instanceof SyncLineageResolver) {
+                $parentId = $resolver->resolveTargetId(static::class, $payload->sourceParentId);
+            } elseif (is_callable($resolver)) {
+                $parentId = $resolver(static::class, $payload->sourceParentId);
+            }
+        }
+
+        return static::updateOrCreate(
+            ['slug' => $payload->slug],
+            [
+                'name' => $payload->name,
+                'parent_id' => $parentId,
+            ]
+        );
+    }
+
+    public function syncHash(): string
+    {
+        return md5($this->name.'|'.$this->slug);
+    }
+
+    public function syncDependencies(): array
+    {
+        return $this->parent_id
+            ? [static::class => [$this->parent_id]]
+            : [];
     }
 }

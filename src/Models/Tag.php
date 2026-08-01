@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
+use Splicewire\Beam\Taxonomy\Sync\TagSyncData;
+use Splicewire\Sync\Contracts\Syncable;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -22,13 +24,14 @@ use Symfony\Component\Uid\Uuid;
  * Modeled after (spatie/laravel-tags)[https://github.com/spatie/laravel-tags/blob/main/src/Tag.php].
  *
  * Extracted DOWN from the host's `App\Models\Tag` into beam-taxonomy (tower-api-dissolution
- * issue 17 P2). The tenant-sync surface (`Splicewire\Sync\Syncable` + `toSyncData`/`fromSyncPayload`)
- * is deliberately NOT implemented here — it references the tower-tenancy `TagSyncData` transit DTO
- * and the tenant lineage table, both UP from this foundation. The host keeps that block on the
- * `App\Models\Tag` subclass behind the `Syncable` port; the Particle-pipeline sync bridge that
- * would let a beam model carry sync natively is deferred to follow-on issue 19 (design U4).
+ * issue 17 P2). Since U4a the tenant-sync surface (`Splicewire\Sync\Syncable` +
+ * `toSyncData`/`fromSyncPayload`) is implemented HERE natively, over the relocated beam
+ * {@see TagSyncData} — using only beam-taxonomy + beam-sync + foundation types, never reaching UP
+ * into tower. A tag has no synced FKs, so its apply is a plain slug/type upsert. The
+ * tenant-specific TARGET (`Splicewire\Tenancy\Sync\TenantSyncTarget`) drives this polymorphically;
+ * the deeper Particle-pipeline sync-in bridge is deferred to follow-on issue 19.
  */
-class Tag extends Model
+class Tag extends Model implements Syncable
 {
     use Filterable;
     use HasFactory;
@@ -162,5 +165,45 @@ class Tag extends Model
 
             return static::findOrCreateFromString($value, $type);
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Syncable (native — relocated DOWN from App\Models\Tag in issue 17 U4a).
+    // Uses only beam-taxonomy/beam-sync/foundation types; a tag carries no synced FKs.
+    // -------------------------------------------------------------------------
+
+    public function toSyncPayload(): array
+    {
+        return $this->toSyncData()->toArray();
+    }
+
+    public function toSyncData(): TagSyncData
+    {
+        return new TagSyncData(
+            hash: $this->syncHash(),
+            name: $this->name,
+            slug: $this->slug,
+            type: $this->type,
+        );
+    }
+
+    public static function fromSyncPayload(array $data, array $config = []): static
+    {
+        $payload = TagSyncData::from($data);
+
+        return static::updateOrCreate(
+            ['slug' => $payload->slug, 'type' => $payload->type],
+            ['name' => $payload->name]
+        );
+    }
+
+    public function syncHash(): string
+    {
+        return md5($this->name.'|'.$this->slug.'|'.$this->type);
+    }
+
+    public function syncDependencies(): array
+    {
+        return [];
     }
 }
