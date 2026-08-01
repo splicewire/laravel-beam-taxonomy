@@ -18,7 +18,7 @@
         "rushing/laravel-data-filters": "*",
         "rushing/laravel-permission-cascade": "*",
         "spatie/laravel-data": "^4.0|^5.0",
-        "spatie/laravel-query-builder": "^5.0|^6.0",
+        "spatie/laravel-query-builder": "^5.0|^6.0|^7.0",
         "spatie/laravel-typescript-transformer": "^2.0|^3.0",
         "schemastud/laravel-data-schemas": "*",
         "laravel/scout": "^10.0",
