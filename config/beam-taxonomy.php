@@ -14,23 +14,26 @@ return [
     | that has no taxonomy model simply leaves these null and the resources
     | are not registered (the provider guards on class_exists).
     |
-    | This app's defaults point at the tower-core models; the BeamTag/BeamSilo
-    | model-cone extraction into this package is a sequenced follow-on
-    | (.scratch/tower-api-dissolution issue 05) — the seam is already correct,
-    | so that later move is a config default change, not a consumer edit.
+    | The BeamTag/BeamSilo model cone now lives IN this package (tower-api-dissolution
+    | issue 17 P2), so these defaults point at the package's own reusable
+    | `Splicewire\Beam\Taxonomy\*` models/DTOs — a fresh beam site gets a working,
+    | schema-typed taxonomy CRUD surface with zero host code. A host that layers extra
+    | relations/behaviour onto Tag/Silo (as splicewire-app does — tower relations +
+    | tenant-sync on `App\Models\{Tag,Silo}` subclasses) rebinds these in its own
+    | published `config/beam-taxonomy.php`.
     */
 
     'models' => [
-        'tag' => \App\Models\Tag::class,
-        'silo' => \App\Models\Silo::class,
+        'tag' => \Splicewire\Beam\Taxonomy\Models\Tag::class,
+        'silo' => \Splicewire\Beam\Taxonomy\Models\Silo::class,
     ],
 
     'data' => [
-        'tag' => \App\Data\TagData::class,
-        'silo' => \App\Data\SiloData::class,
+        'tag' => \Splicewire\Beam\Taxonomy\Data\TagData::class,
+        'silo' => \Splicewire\Beam\Taxonomy\Data\SiloData::class,
     ],
 
     'input' => [
-        'silo' => \App\Data\SiloInputData::class,
+        'silo' => \Splicewire\Beam\Taxonomy\Data\SiloInputData::class,
     ],
 ];
