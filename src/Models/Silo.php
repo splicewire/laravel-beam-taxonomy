@@ -74,6 +74,12 @@ class Silo extends Model implements SchemaVersionedSyncable
         'slug',
         'parent_id',
         'visibility',
+        // Provenance for foreign-only shadow silos (sourced-particles ticket 05). A silo is a
+        // governed ACL container, so a foreign silo MUST carry its source authority + external_ref
+        // and resolve through AuthorityAwareResolver — never auto-merge into a local silo by
+        // name_path (that is a cross-tenant scope leak). Mirrors Fragment.external_ref.
+        'external_ref',
+        'source_authority',
         'created_at',
         'updated_at',
     ];

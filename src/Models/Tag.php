@@ -56,6 +56,12 @@ class Tag extends Model implements SchemaVersionedSyncable
         'name',
         'slug',
         'type',
+        // Provenance for foreign-only shadow tags (sourced-particles ticket 05). A local tag
+        // leaves these null; a foreign-only tag mints with the source-scoped external_ref +
+        // its declared authority. Mirrors Fragment.external_ref. Dedup is enforced by the
+        // partial unique index on external_ref (host tenant migration).
+        'external_ref',
+        'source_authority',
         'created_at',
         'updated_at',
     ];
