@@ -27,7 +27,7 @@ use Symfony\Component\Uid\Uuid;
  * `toSyncData`/`fromSyncPayload`) is implemented HERE natively, over the relocated beam
  * {@see TagSyncData} — using only beam-taxonomy + beam-sync + foundation types, never reaching UP
  * into tower. A tag has no synced FKs, so its apply is a plain slug/type upsert. The
- * tenant-specific TARGET (`Splicewire\Tenancy\Sync\TenantSyncTarget`) drives this polymorphically;
+ * tenant-specific TARGET (`Splicewire\Tower\Tenancy\Sync\TenantSyncTarget`) drives this polymorphically;
  * the deeper Particle-pipeline sync-in bridge is deferred to follow-on issue 19.
  */
 class Tag extends Model implements SchemaVersionedSyncable

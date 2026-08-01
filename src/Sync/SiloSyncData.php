@@ -10,7 +10,7 @@ use Splicewire\Sync\Transit\SyncData;
  * Transit contract for a {@see Silo}. Carries the *source* parent id, remapped through
  * lineage on import. See {@see SyncData}.
  *
- * Relocated DOWN out of `Splicewire\Tenancy\Sync\Data\SiloSyncData` (tower-tenancy) into
+ * Relocated DOWN out of `Splicewire\Tower\Tenancy\Sync\Data\SiloSyncData` (tower-tenancy) into
  * beam-taxonomy alongside its model (tower-api-dissolution issue 17 U4a). Extends beam-sync's
  * transit base directly. The `#[MapName]` keys (`_hash`, `source_parent_id`) and field order are
  * UNCHANGED, so the wire payload is byte-identical to the pre-relocation shape (guarded by
