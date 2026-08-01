@@ -36,13 +36,14 @@ use Symfony\Component\Uid\Uuid;
  * resolver. `syncDependencies` resolves the parent against `static::class` (the runtime class), so
  * a polymorphic apply on the App subclass keys lineage on the same class it always did.
  *
- * ONE host-coupled band stays on the `App\Models\Silo` subclass in tower-core, so this foundation
- * never reaches UP: the fragment relations (`fragments`, `recursiveFragments`) which target the
- * tower-core `Fragment`. Since issue 17 P3a these are the ONLY host relations left — the
- * `concepts`/`rules`/`evidence` relations were removed once their reader (SiloController::show's
- * compliance counts) was re-expressed host-side. The fragment relations are irreducible because the
- * silo data-filter `#[Includable]` surface + `ParticleResource` `includes` eager-load them by name;
- * folding them down awaits the deeper include-surface rehome (follow-on issue 19, design U4).
+ * ONE host-coupled band is wired onto this model at runtime by the app, so this foundation never
+ * reaches UP in SOURCE: the fragment relations (`fragments`, `recursiveFragments`) which target the
+ * tower-core `Fragment`. As of issue 17 P3b the `App\Models\Silo` subclass is gone — the app attaches
+ * those relations to this beam model via `resolveRelationUsing` in `AppServiceProvider::boot()` (it
+ * sits above tower-core, so wiring the host `Fragment` relation from there keeps this SOURCE clean).
+ * They are irreducible because the silo data-filter `#[Includable]` surface + `ParticleResource`
+ * `includes` eager-load them by name; folding them down awaits the deeper include-surface rehome
+ * (follow-on issue 19, design U4).
  */
 class Silo extends Model implements Syncable
 {
