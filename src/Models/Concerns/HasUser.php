@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Splicewire\Beam\Taxonomy\Models\Concerns;
 
 use Rushing\PermissionCascade\Concerns\HasUser as CascadeHasUser;

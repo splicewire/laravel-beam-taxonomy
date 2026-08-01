@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
 use Splicewire\Beam\Taxonomy\Tests\Fixtures\Tag;

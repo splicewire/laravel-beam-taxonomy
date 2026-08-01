@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Splicewire\Beam\Taxonomy\Data;
 
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
