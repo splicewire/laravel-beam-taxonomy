@@ -16,8 +16,8 @@ use Rushing\PermissionCascade\Concerns\HasVisibility;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasTags;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
 use Splicewire\Beam\Taxonomy\Sync\SiloSyncData;
-use Splicewire\Sync\Contracts\SyncLineageResolver;
 use Splicewire\Sync\Contracts\Syncable;
+use Splicewire\Sync\Contracts\SyncLineageResolver;
 use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 use Symfony\Component\Uid\Uuid;
 
