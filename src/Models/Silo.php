@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Splicewire\Beam\Taxonomy\Models;
 
 use Cviebrock\EloquentSluggable\Sluggable;
@@ -13,10 +11,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Laravel\Scout\Searchable;
 use Rushing\PermissionCascade\Concerns\HasVisibility;
+use Splicewire\Beam\Taxonomy\Data\SiloData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasTags;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
 use Splicewire\Beam\Taxonomy\Sync\SiloSyncData;
-use Splicewire\Sync\Contracts\Syncable;
+use Splicewire\Sync\Contracts\SchemaVersionedSyncable;
 use Splicewire\Sync\Contracts\SyncLineageResolver;
 use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 use Symfony\Component\Uid\Uuid;
@@ -45,7 +44,7 @@ use Symfony\Component\Uid\Uuid;
  * `includes` eager-load them by name; folding them down awaits the deeper include-surface rehome
  * (follow-on issue 19, design U4).
  */
-class Silo extends Model implements Syncable
+class Silo extends Model implements SchemaVersionedSyncable
 {
     use Filterable;
     use HasFactory;
@@ -286,7 +285,17 @@ class Silo extends Model implements Syncable
             name: $this->name,
             slug: $this->slug,
             sourceParentId: $this->parent_id,
+            schemaId: static::syncSchemaRecordType()::schemaName().'/'.static::syncSchemaRecordType()::schemaVersion(),
         );
+    }
+
+    /**
+     * The canonical versioned schema DTO for a silo — the reconcile record type the
+     * tenant-sync-in bridge migrates an incoming payload against (issue 19).
+     */
+    public static function syncSchemaRecordType(): string
+    {
+        return SiloData::class;
     }
 
     public static function fromSyncPayload(array $data, array $config = []): static

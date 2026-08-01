@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
+use Splicewire\Beam\Taxonomy\Data\TagData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
 use Splicewire\Beam\Taxonomy\Sync\TagSyncData;
-use Splicewire\Sync\Contracts\Syncable;
+use Splicewire\Sync\Contracts\SchemaVersionedSyncable;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -29,7 +30,7 @@ use Symfony\Component\Uid\Uuid;
  * tenant-specific TARGET (`Splicewire\Tenancy\Sync\TenantSyncTarget`) drives this polymorphically;
  * the deeper Particle-pipeline sync-in bridge is deferred to follow-on issue 19.
  */
-class Tag extends Model implements Syncable
+class Tag extends Model implements SchemaVersionedSyncable
 {
     use Filterable;
     use HasFactory;
@@ -182,7 +183,17 @@ class Tag extends Model implements Syncable
             name: $this->name,
             slug: $this->slug,
             type: $this->type,
+            schemaId: static::syncSchemaRecordType()::schemaName().'/'.static::syncSchemaRecordType()::schemaVersion(),
         );
+    }
+
+    /**
+     * The canonical versioned schema DTO for a tag — the reconcile record type the
+     * tenant-sync-in bridge migrates an incoming payload against (issue 19).
+     */
+    public static function syncSchemaRecordType(): string
+    {
+        return TagData::class;
     }
 
     public static function fromSyncPayload(array $data, array $config = []): static

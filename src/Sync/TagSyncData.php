@@ -23,5 +23,13 @@ class TagSyncData extends SyncData
         public ?string $name,
         public ?string $slug,
         public ?string $type,
+        /**
+         * The source's canonical Tag schema `$id` (relative `<name>/<version>`) so the
+         * target can reconcile-on-apply (issue 19). A NEW additive protocol key — every
+         * other wire key is byte-identical to the pre-issue-19 shape. Emitted last and
+         * never folded into `_hash`.
+         */
+        #[MapName(SyncData::SCHEMA_KEY)]
+        public ?string $schemaId = null,
     ) {}
 }

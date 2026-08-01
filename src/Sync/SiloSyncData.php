@@ -26,5 +26,13 @@ class SiloSyncData extends SyncData
         public ?string $slug,
         #[MapName('source_parent_id')]
         public ?string $sourceParentId,
+        /**
+         * The source's canonical Silo schema `$id` (relative `<name>/<version>`) so the
+         * target can reconcile-on-apply (issue 19). A NEW additive protocol key — every
+         * other wire key is byte-identical to the pre-issue-19 shape. Emitted last and
+         * never folded into `_hash`.
+         */
+        #[MapName(SyncData::SCHEMA_KEY)]
+        public ?string $schemaId = null,
     ) {}
 }
