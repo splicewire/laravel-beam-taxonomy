@@ -14,7 +14,7 @@ use Illuminate\Support\Arr;
  *
  * Moved DOWN from the host's `App\Models\HasTags` into beam-taxonomy (tower-api-dissolution
  * issue 17 P2). The hardcoded `Tag::class` reference is gone: the concrete tag model is resolved
- * from `config('beam-taxonomy.models.tag')` via {@see static::tagModel()}, so a beam site that
+ * from `config('beam.taxonomy.models.tag')` via {@see static::tagModel()}, so a beam site that
  * rebinds its Tag model gets tagging over its own model with no code change.
  */
 trait HasTags
@@ -29,7 +29,7 @@ trait HasTags
      */
     protected static function tagModel(): string
     {
-        return config('beam-taxonomy.models.tag');
+        return config('beam.taxonomy.models.tag');
     }
 
     public static function bootHasTags()

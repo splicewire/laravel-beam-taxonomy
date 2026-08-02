@@ -14,7 +14,7 @@ class SiloQuery extends ResourceQuery
     {
         // Resolve the host-bound Silo model so a beam site that rebinds the model still gets the
         // ownership-scoped, children-counted base query. Falls back to the beam model.
-        $model = config('beam-taxonomy.models.silo', Silo::class);
+        $model = config('beam.taxonomy.models.silo', Silo::class);
 
         $query = $model::query();
 

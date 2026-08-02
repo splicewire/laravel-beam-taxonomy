@@ -92,7 +92,7 @@ class AuthorityAwareResolver
     /** @return class-string<Tag> */
     protected function tagModel(): string
     {
-        $bound = function_exists('config') ? config('beam-taxonomy.models.tag') : null;
+        $bound = function_exists('config') ? config('beam.taxonomy.models.tag') : null;
 
         return is_string($bound) && class_exists($bound) ? $bound : Tag::class;
     }
@@ -100,7 +100,7 @@ class AuthorityAwareResolver
     /** @return class-string<Silo> */
     protected function siloModel(): string
     {
-        $bound = function_exists('config') ? config('beam-taxonomy.models.silo') : null;
+        $bound = function_exists('config') ? config('beam.taxonomy.models.silo') : null;
 
         return is_string($bound) && class_exists($bound) ? $bound : Silo::class;
     }

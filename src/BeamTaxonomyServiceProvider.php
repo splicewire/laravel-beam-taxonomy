@@ -14,21 +14,21 @@ use Splicewire\Beam\Particle\ParticleResourceRegistry;
  * `Route::particleResource($uri, $key)`.
  *
  * The concrete model + read Data class are host-bound via config
- * (`beam-taxonomy.models.*` / `beam-taxonomy.data.*`) so this foundation-tier
+ * (`beam.taxonomy.models.*` / `beam.taxonomy.data.*`) so this foundation-tier
  * package never depends UP on the host's model tier.
  */
 class BeamTaxonomyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/beam-taxonomy.php', 'beam-taxonomy');
+        $this->mergeConfigFrom(__DIR__.'/../config/beam/taxonomy.php', 'beam.taxonomy');
     }
 
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/beam-taxonomy.php' => $this->app->configPath('beam-taxonomy.php'),
+                __DIR__.'/../config/beam/taxonomy.php' => $this->app->configPath('beam/taxonomy.php'),
             ], 'beam-taxonomy-config');
         }
 
@@ -49,12 +49,12 @@ class BeamTaxonomyServiceProvider extends ServiceProvider
 
         // Tag — read-only surface today (index-only mount preserves the exact
         // pre-dissolution contract). Filterable rides DataFilter::query('tag').
-        $tagModel = config('beam-taxonomy.models.tag');
+        $tagModel = config('beam.taxonomy.models.tag');
         if (is_string($tagModel) && class_exists($tagModel)) {
             $registry->register(new ParticleResource(
                 key: 'tag',
                 model: $tagModel,
-                data: config('beam-taxonomy.data.tag'),
+                data: config('beam.taxonomy.data.tag'),
             ));
         }
 
@@ -64,13 +64,13 @@ class BeamTaxonomyServiceProvider extends ServiceProvider
         // silo write/filter surface is declared once, here — not inline in the controller.
         // includes:['fragments'] preserves the eager-load; the child-sync afterWrite was a
         // no-op pre-dissolution, so it's omitted.
-        $siloModel = config('beam-taxonomy.models.silo');
+        $siloModel = config('beam.taxonomy.models.silo');
         if (is_string($siloModel) && class_exists($siloModel)) {
             $registry->register(new ParticleResource(
                 key: 'silo',
                 model: $siloModel,
-                data: config('beam-taxonomy.data.silo'),
-                input: config('beam-taxonomy.input.silo'),
+                data: config('beam.taxonomy.data.silo'),
+                input: config('beam.taxonomy.input.silo'),
                 includes: ['fragments'],
             ));
         }
