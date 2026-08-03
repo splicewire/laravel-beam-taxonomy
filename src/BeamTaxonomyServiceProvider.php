@@ -30,6 +30,14 @@ class BeamTaxonomyServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/beam/taxonomy.php' => $this->app->configPath('beam/taxonomy.php'),
             ], 'beam-taxonomy-config');
+
+            // Package-owned tenant migration, published to the host under the
+            // `beam-taxonomy-migrations` tag (PUBLISH convention — the package is the source of
+            // truth; the host commits the published runnable copy). The `tenant/` subdir is
+            // preserved on publish, so it lands in the host's `database/migrations/tenant/`.
+            $this->publishes([
+                __DIR__.'/../database/migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php.stub' => database_path('migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php'),
+            ], 'beam-taxonomy-migrations');
         }
 
         $this->registerResources();
