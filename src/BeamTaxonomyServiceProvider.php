@@ -31,51 +31,56 @@ class BeamTaxonomyServiceProvider extends ServiceProvider
                 __DIR__.'/../config/beam/taxonomy.php' => $this->app->configPath('beam/taxonomy.php'),
             ], 'beam-taxonomy-config');
 
-            // Package-owned tenant migration, published to the host under the
-            // `beam-taxonomy-migrations` tag (PUBLISH convention — the package is the source of
-            // truth; the host commits the published runnable copy). The `tenant/` subdir is
-            // preserved on publish, so it lands in the host's `database/migrations/tenant/`.
-            $this->publishes([
-                __DIR__.'/../database/migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php.stub' => database_path('migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php'),
-            ], 'beam-taxonomy-migrations');
+            $this->bootMigrations();
         }
 
-        $this->bootMigrations();
         $this->registerResources();
     }
 
     /**
-     * Register the taxonomy base-table migrations (`tags`/`taggables`, `silos`/`siloables`) so a bare
-     * beam site provisions its own taxonomy facets — no longer homed in tower (recohere S7 loose end).
+     * PUBLISH-ONLY ubiquitous migrations — the idiomatic pattern for a PLAIN ServiceProvider, mirroring
+     * the beam-workflows exemplar (commit 994aba1) / beam-core PackageServiceProvider. Undo of the
+     * recohere runtime `loadMigrationsFrom` (central) + Stancl `--path` push (tenant) on the epoch-prefixed
+     * shared/ dir.
      *
-     * UBIQUITOUS (shared/) residency: the tables must exist in BOTH the central and every tenant schema
-     * because `BeamTag`/`BeamSilo` attach as OPTIONAL morph facets on the context-following (central +
-     * tenant) `BeamUxEntry` (S7 / ADR-0165 §2). So the shared dir is registered via BOTH mechanisms —
-     * `loadMigrationsFrom()` for the central `migrate` pass, and a `--path` push onto Stancl's tenant
-     * migration parameters for the `tenants:migrate` pass. Same dir feeds both, so the shape is identical.
+     * A plain provider has no spatie/laravel-package-tools machinery, so this uses Laravel's native
+     * {@see ServiceProvider::publishesMigrations()} (Laravel 11+). It does NOT loadMigrationsFrom and
+     * does NOT push onto `tenancy.migration_parameters.--path`: the package never runs these at runtime.
+     * `vendor:publish --tag=beam-taxonomy-migrations` drops the copies into the HOST, which commits the
+     * runnable copies and runs its own `migrate` + `tenants:migrate` passes.
      *
-     * Gated by `config('beam.taxonomy.register_migrations', true)` — defaults on; a host that vendors the
-     * base tables elsewhere (or publishes them) turns it off.
+     * UBIQUITOUS residency (S7 / ADR-0165 §2): `tags`/`taggables` and `silos`/`siloables` must exist in
+     * BOTH the central and every tenant schema because `BeamTag`/`BeamSilo` attach as OPTIONAL morph
+     * facets on the context-following (central + tenant) `BeamUxEntry`. So each base table ships as a
+     * CENTRAL migration AND a `Schema::hasTable()`-guarded TENANT twin (the dup-guard is exactly the
+     * ubiquitous-table tenant-twin case).
+     *
+     * The base creates carry their NATURAL timestamps (2023_06_30_155156 tags, 2023_06_30_171106 silos),
+     * restored from the tables' original creates. publishesMigrations copies verbatim
+     * (`database.migrations.update_date_on_publish`=false), so the source timestamp IS the published
+     * timestamp — a 2023 base sorts before every tenant-only ALTER that targets it (tower's
+     * add_federation_scope_to_silos at 2026_07_03, this package's add_external_ref at 2026_08_01) in the
+     * globally-basename-sorted migrate pass.
+     *
+     * The tenant `add_external_ref` ALTER stays a publish-STUB (`.php.stub` → renamed to `.php` on
+     * publish) — kept out of any directory mapping so it is not copied verbatim as an unrunnable `.stub`.
+     * Explicit per-file mappings are used throughout for the same reason (a directory mapping would sweep
+     * the `.stub` and cross the central/tenant subdir boundary).
      */
     protected function bootMigrations(): void
     {
-        if (! config('beam.taxonomy.register_migrations', true)) {
-            return;
-        }
+        $migrations = __DIR__.'/../database/migrations';
 
-        $sharedDir = realpath(__DIR__.'/../database/migrations/shared')
-            ?: __DIR__.'/../database/migrations/shared';
+        $this->publishesMigrations([
+            // CENTRAL base creates.
+            $migrations.'/2023_06_30_155156_create_tags_table.php' => $this->app->databasePath('migrations/2023_06_30_155156_create_tags_table.php'),
+            $migrations.'/2023_06_30_171106_create_silos_table.php' => $this->app->databasePath('migrations/2023_06_30_171106_create_silos_table.php'),
 
-        // Central estate — auto-discovered by `migrate`.
-        $this->loadMigrationsFrom($sharedDir);
-
-        // Tenant estate — pushed onto Stancl's `--path` array (no auto-discovery). Same dir, so the
-        // table shape is identical central + tenant.
-        $paths = config('tenancy.migration_parameters.--path', []);
-
-        if (! in_array($sharedDir, $paths, true)) {
-            config()->push('tenancy.migration_parameters.--path', $sharedDir);
-        }
+            // TENANT twins (dup-guarded) + the external_ref ALTER stub (renamed on publish).
+            $migrations.'/tenant/2023_06_30_155156_create_tags_table.php' => $this->app->databasePath('migrations/tenant/2023_06_30_155156_create_tags_table.php'),
+            $migrations.'/tenant/2023_06_30_171106_create_silos_table.php' => $this->app->databasePath('migrations/tenant/2023_06_30_171106_create_silos_table.php'),
+            $migrations.'/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php.stub' => $this->app->databasePath('migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php'),
+        ], 'beam-taxonomy-migrations');
     }
 
     /**

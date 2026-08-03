@@ -41,16 +41,4 @@ return [
         'silo' => SiloInputData::class,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Register package base-table migrations
-    |--------------------------------------------------------------------------
-    |
-    | When true (default) the provider registers the ubiquitous taxonomy base
-    | tables (`tags`/`taggables`, `silos`/`siloables`) into BOTH the central
-    | `migrate` and the tenant `tenants:migrate` passes from the package's
-    | `database/migrations/shared` dir. Turn off if a host vendors/publishes
-    | these tables itself.
-    */
-    'register_migrations' => true,
 ];
