@@ -40,7 +40,42 @@ class BeamTaxonomyServiceProvider extends ServiceProvider
             ], 'beam-taxonomy-migrations');
         }
 
+        $this->bootMigrations();
         $this->registerResources();
+    }
+
+    /**
+     * Register the taxonomy base-table migrations (`tags`/`taggables`, `silos`/`siloables`) so a bare
+     * beam site provisions its own taxonomy facets — no longer homed in tower (recohere S7 loose end).
+     *
+     * UBIQUITOUS (shared/) residency: the tables must exist in BOTH the central and every tenant schema
+     * because `BeamTag`/`BeamSilo` attach as OPTIONAL morph facets on the context-following (central +
+     * tenant) `BeamUxEntry` (S7 / ADR-0165 §2). So the shared dir is registered via BOTH mechanisms —
+     * `loadMigrationsFrom()` for the central `migrate` pass, and a `--path` push onto Stancl's tenant
+     * migration parameters for the `tenants:migrate` pass. Same dir feeds both, so the shape is identical.
+     *
+     * Gated by `config('beam.taxonomy.register_migrations', true)` — defaults on; a host that vendors the
+     * base tables elsewhere (or publishes them) turns it off.
+     */
+    protected function bootMigrations(): void
+    {
+        if (! config('beam.taxonomy.register_migrations', true)) {
+            return;
+        }
+
+        $sharedDir = realpath(__DIR__.'/../database/migrations/shared')
+            ?: __DIR__.'/../database/migrations/shared';
+
+        // Central estate — auto-discovered by `migrate`.
+        $this->loadMigrationsFrom($sharedDir);
+
+        // Tenant estate — pushed onto Stancl's `--path` array (no auto-discovery). Same dir, so the
+        // table shape is identical central + tenant.
+        $paths = config('tenancy.migration_parameters.--path', []);
+
+        if (! in_array($sharedDir, $paths, true)) {
+            config()->push('tenancy.migration_parameters.--path', $sharedDir);
+        }
     }
 
     /**
