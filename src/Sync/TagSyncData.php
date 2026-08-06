@@ -12,8 +12,9 @@ use Splicewire\Sync\Transit\SyncData;
  * Relocated DOWN out of `Splicewire\Tower\Tenancy\Sync\Data\TagSyncData` (tower-tenancy) into
  * beam-taxonomy alongside its model (tower-api-dissolution issue 17 U4a). Extends beam-sync's
  * transit base directly. The `#[MapName]` keys and field order are UNCHANGED, so the wire payload
- * is byte-identical to the pre-relocation shape (guarded by SyncPayloadByteStabilityTest). The old
- * FQCN stays resolving via a class_alias shim in tower-tenancy.
+ * is byte-identical to the pre-relocation shape (guarded by SyncPayloadByteStabilityTest). The
+ * transitional tower-tenancy class_alias for the old FQCN has been removed — call sites reference
+ * this class directly.
  */
 class TagSyncData extends SyncData
 {

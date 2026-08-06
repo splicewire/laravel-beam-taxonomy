@@ -8,19 +8,21 @@ use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
 /**
  * Beam taxonomy base table — the flat `BeamTag` facet + its `taggable` morph pivot.
  *
- * UBIQUITOUS (shared/) — registered into BOTH the central `migrate` and the tenant
- * `tenants:migrate` passes by {@see BeamTaxonomyServiceProvider::bootMigrations()},
- * so `tags`/`taggables` exist identically in central and every tenant schema. This mirrors the
- * beam-ux `beam_ux_entries` charter (context-following residency): S7 attaches `BeamTag` as an
- * OPTIONAL morph facet on the ubiquitous `BeamUxEntry`, so a central entry that classifies with a
- * tag needs `tags`/`taggables` present centrally too.
+ * UBIQUITOUS — shipped as this CENTRAL migration plus a guarded tenant twin at
+ * database/migrations/tenant/, both published into the host by
+ * {@see BeamTaxonomyServiceProvider::bootMigrations()} (native publishesMigrations), so
+ * `tags`/`taggables` exist identically in central and every tenant schema. This mirrors the beam-ux
+ * `beam_ux_entries` charter (context-following residency): S7 attaches `BeamTag` as an OPTIONAL morph
+ * facet on the ubiquitous `BeamUxEntry`, so a central entry that classifies with a tag needs
+ * `tags`/`taggables` present centrally too.
  *
- * Epoch prefix (`0000_00_00_000000_`) — Laravel's Migrator sorts ALL registered paths by basename
- * globally, so a bare `create_` would sort AFTER real timestamps (`c` > `2`). The taxonomy base
- * tables are ALTERed by timestamped migrations in OTHER packages (tower's `add_federation_scope_to_silos`,
- * beam-taxonomy's tenant-published `add_external_ref_to_taxonomy_tables`), so the base creates MUST sort
- * before the earliest possible timestamp — the epoch prefix guarantees that in both the central and the
- * merged tenant pass.
+ * NATURAL timestamp (`2023_06_30_155156`) — restored from the table's original create. Laravel's
+ * Migrator sorts ALL registered paths by basename globally; the taxonomy base tables are ALTERed by
+ * timestamped migrations in OTHER packages (tower's tenant-only `add_federation_scope_to_silos` at
+ * 2026_07_03, beam-taxonomy's tenant-published `add_external_ref_to_taxonomy_tables` at 2026_08_01), so
+ * this 2023 base create sorts well before every such ALTER in both the central and the merged tenant
+ * pass. publishesMigrations copies verbatim (update_date_on_publish=false), so this timestamp is the
+ * published timestamp.
  */
 return new class extends Migration
 {
