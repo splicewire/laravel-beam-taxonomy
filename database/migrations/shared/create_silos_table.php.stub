@@ -1,0 +1,57 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
+
+/**
+ * Beam taxonomy base tables — the hierarchical `BeamSilo` facet + its `siloable` morph pivot. SHARED
+ * (central + every tenant — "everything is shared by default"): published to the SINGLE
+ * `database/migrations/shared/` destination via `->hasMigrations([...])` in
+ * {@see BeamTaxonomyServiceProvider::configurePackage()} — one file, not a duplicated flat+tenant pair
+ * — so `silos`/`siloables` exist identically in central and every tenant schema. beam-tenancy's
+ * `registerSharedMigrationsPath()` runs `database/migrations/shared/` in both the central `migrate`
+ * pass and Stancl's tenant pass. Carries the dup-guard `if (Schema::hasTable('silos')) return;` for a
+ * host that migrates both passes into one schema (the shared-test-DB harness).
+ *
+ * Beam ships only the BASE shape. The federation-scope columns (`silos.is_grantable`,
+ * `silos.default_member_scope`, `siloables.scope`) are a satellite/federation concern and stay in
+ * tower as a tenant-only ALTER (`add_federation_scope_to_silos`) — free beam never carries a
+ * federation column.
+ *
+ * PUBLISH-ONLY stub (the estate-wide convention): this file carries no timestamp — `vendor:publish
+ * --tag=beam-taxonomy-migrations` re-stamps it to the install moment via spatie/laravel-package-tools'
+ * `generateMigrationName`, sequenced ahead of the tenant-only `add_external_ref_to_taxonomy_tables`
+ * ALTER that targets these tables (declared after it in `->hasMigrations([...])`).
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (Schema::hasTable('silos')) {
+            return;
+        }
+
+        Schema::create('silos', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug');
+            $table->uuid('parent_id')->nullable()->index();
+            $table->timestamps();
+        });
+
+        Schema::create('siloables', function (Blueprint $table) {
+            $table->foreignUuid('silo_id')->constrained()->cascadeOnDelete();
+            $table->uuid('siloable_id');
+            $table->string('siloable_type');
+            $table->unique(['silo_id', 'siloable_id', 'siloable_type']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('siloables');
+        Schema::dropIfExists('silos');
+    }
+};

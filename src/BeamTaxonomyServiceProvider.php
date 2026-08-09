@@ -2,9 +2,12 @@
 
 namespace Splicewire\Beam\Taxonomy;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Splicewire\Beam\Doctor\BeamDoctorManifest;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
+use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
 
 /**
  * Wires the beam taxonomy surface. Each taxonomy resource (Tag, Silo …) is a
@@ -16,71 +19,49 @@ use Splicewire\Beam\Particle\ParticleResourceRegistry;
  * The concrete model + read Data class are host-bound via config
  * (`beam.taxonomy.models.*` / `beam.taxonomy.data.*`) so this foundation-tier
  * package never depends UP on the host's model tier.
+ *
+ * The taxonomy base tables (`tags`/`taggables`, `silos`/`siloables`) plus the tenant-only
+ * `add_external_ref_to_taxonomy_tables` ALTER ship as PUBLISH-ONLY spatie/laravel-package-tools
+ * stubs — the idiomatic pattern for a PackageServiceProvider, mirroring beam-core's own substrate
+ * migrations. `runsMigrations` stays FALSE, so beam-taxonomy never loads them at runtime;
+ * `vendor:publish --tag=beam-taxonomy-migrations` re-stamps + sequences timestamped copies into the
+ * HOST at install time, which runs them.
+ *
+ * UBIQUITOUS residency (S7 / ADR-0165 §2): `tags`/`taggables` and `silos`/`siloables` must exist in
+ * BOTH the central and every tenant schema because `BeamTag`/`BeamSilo` attach as OPTIONAL morph
+ * facets on the context-following (central + tenant) `BeamUxEntry`. Per "everything is shared by
+ * default," each base table publishes to the SINGLE `database/migrations/shared/` destination, not a
+ * duplicated flat+tenant pair, registered via `->hasMigrations([...])` in
+ * {@see self::configurePackage()} (NOT `->discoversMigrations()`, whose `->files()` is non-recursive
+ * and would miss the `shared/` subdir) — beam-tenancy's `registerSharedMigrationsPath()` runs that one
+ * directory in both the central `migrate` pass and Stancl's tenant pass. package-tools'
+ * `generateMigrationName` stamps each entry a second apart in declared order, so the base creates
+ * re-stamp before the tenant-only `add_external_ref` ALTER that targets them, every install.
  */
-class BeamTaxonomyServiceProvider extends ServiceProvider
+class BeamTaxonomyServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/beam/taxonomy.php', 'beam.taxonomy');
+        $package
+            ->name('laravel-beam-taxonomy')
+            ->hasConfigFile('beam/taxonomy')
+            ->hasMigrations([
+                'shared/create_tags_table',
+                'shared/create_silos_table',
+                'tenant/add_external_ref_to_taxonomy_tables',
+            ]);
     }
 
-    public function boot(): void
+    public function packageBooted(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__.'/../config/beam/taxonomy.php' => $this->app->configPath('beam/taxonomy.php'),
-            ], 'beam-taxonomy-config');
-
-            $this->bootMigrations();
-        }
-
         $this->registerResources();
-    }
 
-    /**
-     * PUBLISH-ONLY ubiquitous migrations — the idiomatic pattern for a PLAIN ServiceProvider, mirroring
-     * the beam-workflows exemplar (commit 994aba1) / beam-core PackageServiceProvider. Undo of the
-     * recohere runtime `loadMigrationsFrom` (central) + Stancl `--path` push (tenant) on the epoch-prefixed
-     * shared/ dir.
-     *
-     * A plain provider has no spatie/laravel-package-tools machinery, so this uses Laravel's native
-     * {@see ServiceProvider::publishesMigrations()} (Laravel 11+). It does NOT loadMigrationsFrom and
-     * does NOT push onto `tenancy.migration_parameters.--path`: the package never runs these at runtime.
-     * `vendor:publish --tag=beam-taxonomy-migrations` drops the copies into the HOST, which commits the
-     * runnable copies and runs its own `migrate` + `tenants:migrate` passes.
-     *
-     * UBIQUITOUS residency (S7 / ADR-0165 §2): `tags`/`taggables` and `silos`/`siloables` must exist in
-     * BOTH the central and every tenant schema because `BeamTag`/`BeamSilo` attach as OPTIONAL morph
-     * facets on the context-following (central + tenant) `BeamUxEntry`. So each base table ships as a
-     * CENTRAL migration AND a `Schema::hasTable()`-guarded TENANT twin (the dup-guard is exactly the
-     * ubiquitous-table tenant-twin case).
-     *
-     * The base creates carry their NATURAL timestamps (2023_06_30_155156 tags, 2023_06_30_171106 silos),
-     * restored from the tables' original creates. publishesMigrations copies verbatim
-     * (`database.migrations.update_date_on_publish`=false), so the source timestamp IS the published
-     * timestamp — a 2023 base sorts before every tenant-only ALTER that targets it (tower's
-     * add_federation_scope_to_silos at 2026_07_03, this package's add_external_ref at 2026_08_01) in the
-     * globally-basename-sorted migrate pass.
-     *
-     * The tenant `add_external_ref` ALTER stays a publish-STUB (`.php.stub` → renamed to `.php` on
-     * publish) — kept out of any directory mapping so it is not copied verbatim as an unrunnable `.stub`.
-     * Explicit per-file mappings are used throughout for the same reason (a directory mapping would sweep
-     * the `.stub` and cross the central/tenant subdir boundary).
-     */
-    protected function bootMigrations(): void
-    {
-        $migrations = __DIR__.'/../database/migrations';
-
-        $this->publishesMigrations([
-            // CENTRAL base creates.
-            $migrations.'/2023_06_30_155156_create_tags_table.php' => $this->app->databasePath('migrations/2023_06_30_155156_create_tags_table.php'),
-            $migrations.'/2023_06_30_171106_create_silos_table.php' => $this->app->databasePath('migrations/2023_06_30_171106_create_silos_table.php'),
-
-            // TENANT twins (dup-guarded) + the external_ref ALTER stub (renamed on publish).
-            $migrations.'/tenant/2023_06_30_155156_create_tags_table.php' => $this->app->databasePath('migrations/tenant/2023_06_30_155156_create_tags_table.php'),
-            $migrations.'/tenant/2023_06_30_171106_create_silos_table.php' => $this->app->databasePath('migrations/tenant/2023_06_30_171106_create_silos_table.php'),
-            $migrations.'/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php.stub' => $this->app->databasePath('migrations/tenant/2026_08_01_000002_add_external_ref_to_taxonomy_tables.php'),
-        ], 'beam-taxonomy-migrations');
+        if ($this->app->bound(BeamDoctorManifest::class)) {
+            $this->app->make(BeamDoctorManifest::class)->register(
+                'splicewire/laravel-beam-taxonomy',
+                BeamTaxonomyMigrationsAudit::class,
+            );
+        }
     }
 
     /**

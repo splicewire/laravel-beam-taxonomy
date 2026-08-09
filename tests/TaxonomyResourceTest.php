@@ -2,6 +2,7 @@
 
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
+use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
 use Splicewire\Beam\Taxonomy\Tests\Fixtures\Tag;
 
 it('registers the tag particle resource over the host-bound model', function () {
@@ -18,7 +19,9 @@ it('is a no-op when no taxonomy model is bound', function () {
     $registry = new ParticleResourceRegistry;
     app()->instance(ParticleResourceRegistry::class, $registry);
 
-    (new Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider(app()))->boot();
+    $provider = new BeamTaxonomyServiceProvider(app());
+    $provider->register();
+    $provider->boot();
 
     expect(fn () => $registry->get('tag'))->toThrow(RuntimeException::class);
 });

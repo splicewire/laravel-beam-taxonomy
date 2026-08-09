@@ -6,14 +6,19 @@ use Illuminate\Support\Facades\Schema;
 use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
 
 /**
- * TENANT TWIN of the ubiquitous `tags`/`taggables` base tables. Identical DDL to the central
- * migration one dir up; carries the dup-guard `if (Schema::hasTable('tags')) return;` because a host
- * that merges its central + tenant passes into one schema (or re-runs the tenant pass) would otherwise
- * collide on the already-created table. Published into the host's database/migrations/tenant/ by
- * {@see BeamTaxonomyServiceProvider::bootMigrations()} (native publishesMigrations, verbatim copy).
+ * Beam taxonomy base tables — `tags` + its `taggables` morph pivot. SHARED (central + every tenant —
+ * "everything is shared by default"): published to the SINGLE `database/migrations/shared/`
+ * destination via `->hasMigrations([...])` in {@see BeamTaxonomyServiceProvider::configurePackage()} —
+ * one file, not a duplicated flat+tenant pair — so `tags`/`taggables` exist identically in central and
+ * every tenant schema. beam-tenancy's `registerSharedMigrationsPath()` runs
+ * `database/migrations/shared/` in both the central `migrate` pass and Stancl's tenant pass. Carries
+ * the dup-guard `if (Schema::hasTable('tags')) return;` for a host that migrates both passes into one
+ * schema (the shared-test-DB harness).
  *
- * Natural timestamp (2023_06_30_155156) sorts before the tenant-only ALTERs that target these tables
- * (tower's add_federation_scope_to_silos at 2026_07_03, taxonomy's add_external_ref at 2026_08_01).
+ * PUBLISH-ONLY stub (the estate-wide convention): this file carries no timestamp — `vendor:publish
+ * --tag=beam-taxonomy-migrations` re-stamps it to the install moment, sequenced ahead of the
+ * tenant-only `add_external_ref_to_taxonomy_tables` ALTER that targets this table (declared after it
+ * in `->hasMigrations([...])`).
  */
 return new class extends Migration
 {
