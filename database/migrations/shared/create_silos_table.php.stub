@@ -18,7 +18,10 @@ use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
  * Beam ships only the BASE shape. The federation-scope columns (`silos.is_grantable`,
  * `silos.default_member_scope`, `siloables.scope`) are a satellite/federation concern and stay in
  * tower as a tenant-only ALTER (`add_federation_scope_to_silos`) — free beam never carries a
- * federation column.
+ * federation column. `silos.name_path` is a generic hierarchy/materialized-path column (silos already
+ * carry `parent_id`), not a tower concern, so it's folded directly into this base create rather than
+ * staying as tower's `add_silo_name_path` tenant ALTER — `silos` is pre-prod, so there's no deployed
+ * data whose migration history needs preserving.
  *
  * PUBLISH-ONLY stub (the estate-wide convention): this file carries no timestamp — `vendor:publish
  * --tag=beam-taxonomy-migrations` re-stamps it to the install moment via spatie/laravel-package-tools'
@@ -38,6 +41,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug');
             $table->uuid('parent_id')->nullable()->index();
+            $table->string('name_path', 1024)->nullable();
             $table->timestamps();
         });
 
