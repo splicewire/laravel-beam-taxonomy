@@ -5,6 +5,7 @@ namespace Splicewire\Beam\Taxonomy;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Splicewire\Beam\Doctor\BeamDoctorManifest;
+use Splicewire\Beam\Install\BeamInstallManifest;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
 use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
@@ -55,6 +56,17 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->registerResources();
+
+        // Self-register into beam-core's install manifest so `splicewire:beam:install` publishes
+        // this package's `shared/` migrations (tags/silos, including name_path) with the rest of
+        // the stack. Recohere gap: this package predates the manifest and was never wired in.
+        if ($this->app->bound(BeamInstallManifest::class)) {
+            $this->app->make(BeamInstallManifest::class)->register(
+                package: 'splicewire/laravel-beam-taxonomy',
+                publishTags: ['beam-taxonomy-config', 'beam-taxonomy-migrations'],
+                migrates: true,
+            );
+        }
 
         if ($this->app->bound(BeamDoctorManifest::class)) {
             $this->app->make(BeamDoctorManifest::class)->register(
