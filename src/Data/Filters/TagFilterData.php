@@ -18,18 +18,20 @@ use Splicewire\Beam\Taxonomy\QueryBuilders\TagQuery;
  * ADR-0008) rather than through a hand-maintained `config('data-filters.resources')` entry — the
  * reference example for converting the remaining legacy-aliased resources.
  *
- * Two declarations, because the attribute is repeatable and that is how an alias key is expressed:
- * `tag` is the canonical key, `tags` the plural the frame's list shell asks for. Both carry the same
- * `query`, so both resolve to identical wiring — exactly what the old static `$aliases` array
- * produced by copying one entry onto a second key.
+ * ONE key, `tag`, matching the `ParticleResource` this package registers. The app's static registry
+ * used to carry a plural `tags` entry with a `tag => tags` alias, and the conversion could have
+ * reproduced that pair as two declarations (repeatability is exactly how `#[ResourceFilter]`
+ * expresses an alias). It doesn't, because nothing consumed the plural: the live path is
+ * `DataFilter::query('tag')`, and `Route::particleResource('tags', 'tag', …)` is a plural URL path
+ * over the singular key, not a second registry key. The frame list shell's plural-key convention is
+ * real for other resources, but no list UI mounts a tags facets bar. A key kept only so a demo can
+ * resolve it is the same dead wiring this effort exists to remove — the alias mechanism is proven in
+ * data-filters' own suite instead.
  *
- * Note which one is `resource:`. The plural is the app-facing key, but `resource:` names the key the
- * MODEL is resolved under, and the `ParticleResource` this package registers is keyed `tag`. Neither
- * declaration states `model:` at all — beam's resolver reads it off that particle declaration, so
- * the model lives in exactly one place.
+ * No `model:` — beam's resolver reads it off the `ParticleResource` registered under this same key,
+ * so the model lives in exactly one place.
  */
 #[ResourceFilter(key: 'tag', query: TagQuery::class)]
-#[ResourceFilter(key: 'tags', resource: 'tag', query: TagQuery::class)]
 class TagFilterData extends Data
 {
     public function __construct(
