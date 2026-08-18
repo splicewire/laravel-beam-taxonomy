@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Splicewire\Beam\Schema\ConvergentTable;
 use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
 
 /**
@@ -12,8 +13,10 @@ use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
  * {@see BeamTaxonomyServiceProvider::configurePackage()} — one file, not a duplicated flat+tenant pair
  * — so `silos`/`siloables` exist identically in central and every tenant schema. beam-tenancy's
  * `registerSharedMigrationsPath()` runs `database/migrations/shared/` in both the central `migrate`
- * pass and Stancl's tenant pass. Carries the dup-guard `if (Schema::hasTable('silos')) return;` for a
- * host that migrates both passes into one schema (the shared-test-DB harness).
+ * pass and Stancl's tenant pass. Both creates carry the CONVERGENT guard
+ * (`docs/agents/convergent-migration-guards.convention.md` in laravel-beam), which covers the host that
+ * migrates both passes into one schema (the shared-test-DB harness) — and, unlike the bare `hasTable`
+ * return it replaced, it guards `siloables` too.
  *
  * Beam ships only the BASE shape. The federation-scope columns (`silos.is_grantable`,
  * `silos.default_member_scope`, `siloables.scope`) are a satellite/federation concern and stay in
@@ -32,25 +35,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('silos')) {
-            return;
-        }
+        ConvergentTable::named('silos')
+            ->define(function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->string('slug');
+                $table->uuid('parent_id')->nullable()->index();
+                $table->string('name_path', 1024)->nullable();
+                $table->timestamps();
+            })
+            ->assert();
 
-        Schema::create('silos', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->string('slug');
-            $table->uuid('parent_id')->nullable()->index();
-            $table->string('name_path', 1024)->nullable();
-            $table->timestamps();
-        });
-
-        Schema::create('siloables', function (Blueprint $table) {
-            $table->foreignUuid('silo_id')->constrained()->cascadeOnDelete();
-            $table->uuid('siloable_id');
-            $table->string('siloable_type');
-            $table->unique(['silo_id', 'siloable_id', 'siloable_type']);
-        });
+        ConvergentTable::named('siloables')
+            ->define(function (Blueprint $table) {
+                $table->foreignUuid('silo_id')->constrained()->cascadeOnDelete();
+                $table->uuid('siloable_id');
+                $table->string('siloable_type');
+                $table->unique(['silo_id', 'siloable_id', 'siloable_type']);
+            })
+            ->assert();
     }
 
     public function down(): void
