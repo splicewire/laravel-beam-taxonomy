@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Splicewire\Beam\Schema\ConvergentTable;
+use Rushing\SchemaConvergence\ConvergentTable;
 use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
 
 /**
@@ -14,7 +14,7 @@ use Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider;
  * — so `silos`/`siloables` exist identically in central and every tenant schema. beam-tenancy's
  * `registerSharedMigrationsPath()` runs `database/migrations/shared/` in both the central `migrate`
  * pass and Stancl's tenant pass. Both creates carry the CONVERGENT guard
- * (`docs/agents/convergent-migration-guards.convention.md` in laravel-beam), which covers the host that
+ * (`docs/agents/convergent-migration-guards.convention.md` in rushing/laravel-schema-convergence), which covers the host that
  * migrates both passes into one schema (the shared-test-DB harness) — and, unlike the bare `hasTable`
  * return it replaced, it guards `siloables` too.
  *

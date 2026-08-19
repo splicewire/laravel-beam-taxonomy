@@ -25,7 +25,8 @@
         "laravel/scout": "^10.0",
         "cviebrock/eloquent-sluggable": "*",
         "staudenmeir/laravel-adjacency-list": "*",
-        "mehdi-fathi/eloquent-filter": "*"
+        "mehdi-fathi/eloquent-filter": "*",
+        "rushing/laravel-schema-convergence": "*"
     },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0|^11.0",
