@@ -23,9 +23,9 @@ beforeEach(function () {
 });
 
 it('registers the tag resource from its own declaration', function () {
-    expect(app(ResourceRegistry::class)->has('tag'))->toBeTrue();
+    expect(app(ResourceRegistry::class)->has('tags'))->toBeTrue();
 
-    $definition = DataFilter::resource('tag');
+    $definition = DataFilter::resource('tags');
 
     expect($definition->data)->toBe(TagFilterData::class)
         ->and($definition->query)->toBe(TagQuery::class);
@@ -35,14 +35,14 @@ it('resolves the model off the tag particle declaration, never restating it', fu
     // The #[ResourceFilter] names no model; the ParticleResource this package registers does.
     // Asserted against the registry rather than a literal, because THAT is the claim: whatever the
     // particle declaration says the model is, is what the filter key resolves to.
-    $declared = app(ParticleResourceRegistry::class)->get('tag')->model;
+    $declared = app(ParticleResourceRegistry::class)->get('tags')->model;
 
     expect($declared)->not->toBeNull()
-        ->and(DataFilter::resource('tag')->model)->toBe($declared);
+        ->and(DataFilter::resource('tags')->model)->toBe($declared);
 });
 
 it('builds a working query', function () {
-    expect(DataFilter::query('tag'))->toBeInstanceOf(TagQuery::class);
+    expect(DataFilter::query('tags'))->toBeInstanceOf(TagQuery::class);
 });
 
 it('registers no plural alias — nothing consumes one', function () {

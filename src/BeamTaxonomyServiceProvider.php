@@ -89,11 +89,11 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         $registry = $this->app->make(ParticleResourceRegistry::class);
 
         // Tag — read-only surface today (index-only mount preserves the exact
-        // pre-dissolution contract). Filterable rides DataFilter::query('tag').
+        // pre-dissolution contract). Filterable rides DataFilter::query('tags').
         $tagModel = config('beam.taxonomy.models.tag');
         if (is_string($tagModel) && class_exists($tagModel)) {
             $registry->register(new ParticleResource(
-                key: 'tag',
+                key: 'tags',
                 model: $tagModel,
                 data: config('beam.taxonomy.data.tag'),
             ));
@@ -108,7 +108,7 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         $siloModel = config('beam.taxonomy.models.silo');
         if (is_string($siloModel) && class_exists($siloModel)) {
             $registry->register(new ParticleResource(
-                key: 'silo',
+                key: 'silos',
                 model: $siloModel,
                 data: config('beam.taxonomy.data.silo'),
                 input: config('beam.taxonomy.input.silo'),

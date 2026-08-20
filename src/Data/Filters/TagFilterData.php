@@ -18,20 +18,16 @@ use Splicewire\Beam\Taxonomy\QueryBuilders\TagQuery;
  * ADR-0008) rather than through a hand-maintained `config('data-filters.resources')` entry — the
  * reference example for converting the remaining legacy-aliased resources.
  *
- * ONE key, `tag`, matching the `ParticleResource` this package registers. The app's static registry
- * used to carry a plural `tags` entry with a `tag => tags` alias, and the conversion could have
- * reproduced that pair as two declarations (repeatability is exactly how `#[ResourceFilter]`
- * expresses an alias). It doesn't, because nothing consumed the plural: the live path is
- * `DataFilter::query('tag')`, and `Route::particleResource('tags', 'tag', …)` is a plural URL path
- * over the singular key, not a second registry key. The frame list shell's plural-key convention is
- * real for other resources, but no list UI mounts a tags facets bar. A key kept only so a demo can
- * resolve it is the same dead wiring this effort exists to remove — the alias mechanism is proven in
- * data-filters' own suite instead.
+ * ONE key, `tags`, matching the `ParticleResource` this package registers. It was `tag` — singular,
+ * against a plural `tags` URL — until api-surface-coherence 16 normalised every resource key to
+ * plural-kebab and deleted the alias array that had let the two spellings coexist. There is still
+ * exactly one declaration: repeatability of `#[ResourceFilter]` is reserved for a declared VARIANT
+ * (ticket 10 §4), not for propping up a legacy spelling.
  *
  * No `model:` — beam's resolver reads it off the `ParticleResource` registered under this same key,
  * so the model lives in exactly one place.
  */
-#[ResourceFilter(key: 'tag', query: TagQuery::class)]
+#[ResourceFilter(key: 'tags', query: TagQuery::class)]
 class TagFilterData extends Data
 {
     public function __construct(
