@@ -2,7 +2,6 @@
 
 namespace Splicewire\Beam\Taxonomy\Models;
 
-use Cviebrock\EloquentSluggable\Sluggable;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -11,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Laravel\Scout\Searchable;
 use Rushing\PermissionCascade\Concerns\HasVisibility;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 use Splicewire\Beam\Taxonomy\Data\SiloData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasTags;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
@@ -49,12 +50,12 @@ class Silo extends Model implements SchemaVersionedSyncable
     use Filterable;
     use HasFactory;
     use HasRecursiveRelationships;
+    use HasSlug;
     use HasTags;
     use HasUser;
     use HasUuids;
     use HasVisibility;
     use Searchable;
-    use Sluggable;
 
     public function searchableAs(): string
     {
@@ -99,14 +100,21 @@ class Silo extends Model implements SchemaVersionedSyncable
         return $this->ancestors()->orderByDesc('depth')->get()->all();
     }
 
-    public function sluggable(): array
+    /**
+     * Slug generation, on spatie (api-surface-coherence 19 / ticket 03 §9 — the estate carried two slug
+     * libraries and converges on one). A **translation, not a change**: cviebrock declared
+     * `'unique' => false`, so `allowDuplicateSlugs()` preserves it — two silos may share a slug, because a
+     * Silo is addressed by its `slug_path` ({@see getCustomPaths()}, the adjacency-list ancestry), never by
+     * `slug` alone. `doNotGenerateSlugsOnUpdate()` matches cviebrock's stable-once-set default, so a
+     * renamed silo keeps its path instead of silently re-slugging every descendant.
+     */
+    public function getSlugOptions(): SlugOptions
     {
-        return [
-            'slug' => [
-                'source' => 'name',
-                'unique' => false,
-            ],
-        ];
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->allowDuplicateSlugs()
+            ->doNotGenerateSlugsOnUpdate();
     }
 
     public function getCustomPaths()

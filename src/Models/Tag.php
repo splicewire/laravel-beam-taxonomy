@@ -3,7 +3,6 @@
 namespace Splicewire\Beam\Taxonomy\Models;
 
 use ArrayAccess;
-use Cviebrock\EloquentSluggable\Sluggable;
 use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -11,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 use Splicewire\Beam\Taxonomy\Data\TagData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
 use Splicewire\Beam\Taxonomy\Sync\TagSyncData;
@@ -34,10 +35,10 @@ class Tag extends Model implements SchemaVersionedSyncable
 {
     use Filterable;
     use HasFactory;
+    use HasSlug;
     use HasUser;
     use HasUuids;
     use Searchable;
-    use Sluggable;
 
     public function searchableAs(): string
     {
@@ -66,13 +67,18 @@ class Tag extends Model implements SchemaVersionedSyncable
         'updated_at',
     ];
 
-    public function sluggable(): array
+    /**
+     * Slug generation, on spatie (api-surface-coherence 19 / ticket 03 §9 — the estate carried two slug
+     * libraries and converges on one). A **translation, not a change**: this took cviebrock's defaults, and
+     * spatie's match them — unique slugs with a numeric suffix on collision. `doNotGenerateSlugsOnUpdate()`
+     * is likewise both libraries' stable-once-set default, stated explicitly rather than inherited.
+     */
+    public function getSlugOptions(): SlugOptions
     {
-        return [
-            'slug' => [
-                'source' => 'name',
-            ],
-        ];
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate();
     }
 
     private static $whiteListFilter = ['*'];
