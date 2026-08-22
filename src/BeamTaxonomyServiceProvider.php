@@ -2,6 +2,8 @@
 
 namespace Splicewire\Beam\Taxonomy;
 
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Rushing\PermissionCascade\Support\CascadePolicyRegistrar;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Splicewire\Beam\Doctor\BeamDoctorManifest;
@@ -9,6 +11,8 @@ use Splicewire\Beam\Install\BeamInstallManifest;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
 use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
+use Splicewire\Beam\Taxonomy\Models\Silo;
+use Splicewire\Beam\Taxonomy\Models\Tag;
 
 /**
  * Wires the beam taxonomy surface. Each taxonomy resource (Tag, Silo …) is a
@@ -55,6 +59,8 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->bootMorphMap();
+        $this->bootPolicies();
         $this->registerResources();
 
         // Self-register into beam-core's install manifest so `splicewire:beam:install` publishes
@@ -74,6 +80,50 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
                 BeamTaxonomyMigrationsAudit::class,
             );
         }
+    }
+
+    /**
+     * This package's own morph aliases — the wire identifiers its polymorphic rows store
+     * (`siloable_type`, `taggable_type`), and the permission-token prefixes (ADR-0118: the alias
+     * IS the prefix, so an unaliased model leaks its FQCN into the token).
+     *
+     * The package that OWNS the model owns its alias; a host should only have to declare aliases
+     * for its own models. Registered ADDITIVELY (`Relation::morphMap`), NEVER `enforceMorphMap`:
+     * a beam-composing host has many models on class-string morphs, and toggling global strict
+     * mode rejects every one of them (`ClassMorphViolationException`). Mirrors
+     * {@see \Splicewire\Beam\BeamServiceProvider} — additive registration is idempotent, and a
+     * host booting later keeps last-writer override authority.
+     */
+    protected function bootMorphMap(): void
+    {
+        Relation::morphMap([
+            'silo' => Silo::class,
+            'tag' => Tag::class,
+        ]);
+    }
+
+    /**
+     * This package's own authorization, declared on the models via `#[UseCascadePolicy]` and bound
+     * here. The package that owns the model owns its policy binding — a host should not have to know
+     * that a Silo needs one, any more than it should have to know the model's morph alias.
+     *
+     * `SiloPolicy`/`TagPolicy` used to be hand-written `extends BaseModelPolicy` classes with a
+     * `$defaultModelClass` and NOTHING else — pure ceremony around the cascade machinery. The
+     * attribute expresses exactly that, so the classes are deleted rather than moved.
+     * {@see CascadePolicyRegistrar::register()} reads the attribute by reflection and binds the Gate
+     * exactly as the former `Gate::policy($model, $policy)` calls did — behaviour-identical.
+     *
+     * NB the attribute only expresses UNCONDITIONAL answers: any ability not named in it falls to
+     * `ConfiguredModelPolicy::__call()`, which returns `false`. A model whose rule depends on the
+     * INSTANCE (or which adds cascading custom abilities) still needs a real Policy class — which is
+     * why beam-embed's `EmbedPolicy` and tower's `ThreadPolicy`/`ModelStatusPolicy` stay classes.
+     */
+    protected function bootPolicies(): void
+    {
+        CascadePolicyRegistrar::registerMany([
+            Silo::class,
+            Tag::class,
+        ]);
     }
 
     /**

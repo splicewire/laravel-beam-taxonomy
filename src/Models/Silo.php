@@ -2,13 +2,13 @@
 
 namespace Splicewire\Beam\Taxonomy\Models;
 
-use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Laravel\Scout\Searchable;
+use Rushing\PermissionCascade\Attributes\UseCascadePolicy;
 use Rushing\PermissionCascade\Concerns\HasVisibility;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -45,9 +45,9 @@ use Symfony\Component\Uid\Uuid;
  * `includes` eager-load them by name; folding them down awaits the deeper include-surface rehome
  * (follow-on issue 19, design U4).
  */
+#[UseCascadePolicy]
 class Silo extends Model implements SchemaVersionedSyncable
 {
-    use Filterable;
     use HasFactory;
     use HasRecursiveRelationships;
     use HasSlug;

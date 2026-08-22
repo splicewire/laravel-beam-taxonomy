@@ -3,13 +3,13 @@
 namespace Splicewire\Beam\Taxonomy\Models;
 
 use ArrayAccess;
-use eloquentFilter\QueryFilter\ModelFilters\Filterable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
+use Rushing\PermissionCascade\Attributes\UseCascadePolicy;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Splicewire\Beam\Taxonomy\Data\TagData;
@@ -31,9 +31,9 @@ use Symfony\Component\Uid\Uuid;
  * tenant-specific TARGET (`Splicewire\Tower\Tenancy\Sync\TenantSyncTarget`) drives this polymorphically;
  * the deeper Particle-pipeline sync-in bridge is deferred to follow-on issue 19.
  */
+#[UseCascadePolicy]
 class Tag extends Model implements SchemaVersionedSyncable
 {
-    use Filterable;
     use HasFactory;
     use HasSlug;
     use HasUser;
