@@ -144,7 +144,7 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         if (is_string($tagModel) && class_exists($tagModel)) {
             $registry->register(new ParticleResource(
                 key: 'tags',
-                model: $tagModel,
+                backing: $tagModel,
                 data: config('beam.taxonomy.data.tag'),
             ));
         }
@@ -159,7 +159,7 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         if (is_string($siloModel) && class_exists($siloModel)) {
             $registry->register(new ParticleResource(
                 key: 'silos',
-                model: $siloModel,
+                backing: $siloModel,
                 data: config('beam.taxonomy.data.silo'),
                 input: config('beam.taxonomy.input.silo'),
                 includes: ['fragments'],
