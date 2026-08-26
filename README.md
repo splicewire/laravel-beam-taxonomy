@@ -14,8 +14,8 @@ model tier.
 
 | Key   | Model (host-bound)              | Status                                   |
 | ----- | ------------------------------- | ---------------------------------------- |
-| `tag` | `beam-taxonomy.models.tag`      | read-only (index) — dissolved from `TagController` |
-| `silo`| `beam-taxonomy.models.silo`     | pending (issue 05)                        |
+| `tag` | `beam.taxonomy.models.tag`      | read-only (index) — dissolved from `TagController` |
+| `silo`| `beam.taxonomy.models.silo`     | pending (issue 05)                        |
 
 ## Mount
 

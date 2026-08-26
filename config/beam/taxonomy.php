@@ -24,7 +24,7 @@ return [
     | schema-typed taxonomy CRUD surface with zero host code. A host that layers extra
     | relations/behaviour onto Tag/Silo (as splicewire-app does — tower relations +
     | tenant-sync on `App\Models\{Tag,Silo}` subclasses) rebinds these in its own
-    | published `config/beam-taxonomy.php`.
+    | published `config/beam/taxonomy.php`.
     */
 
     'models' => [

@@ -35,7 +35,7 @@ it('resolves the model off the tag particle declaration, never restating it', fu
     // The #[ResourceFilter] names no model; the ParticleResource this package registers does.
     // Asserted against the registry rather than a literal, because THAT is the claim: whatever the
     // particle declaration says the model is, is what the filter key resolves to.
-    $declared = app(ParticleResourceRegistry::class)->get('tags')->model;
+    $declared = app(ParticleResourceRegistry::class)->get('tags')->modelClass();
 
     expect($declared)->not->toBeNull()
         ->and(DataFilter::resource('tags')->model)->toBe($declared);
@@ -45,6 +45,10 @@ it('builds a working query', function () {
     expect(DataFilter::query('tags'))->toBeInstanceOf(TagQuery::class);
 });
 
-it('registers no plural alias — nothing consumes one', function () {
-    expect(app(ResourceRegistry::class)->has('tags'))->toBeFalse();
+// The alias this guards against is the SINGULAR one. It used to be the plural: the key was `tag`
+// and `tags` was the alias propping up the plural URL. api-surface-coherence 16 normalised the key
+// to plural-kebab and deleted the alias array, so the spelling that must NOT be registered flipped
+// sides — the guard did not, and asserted the live key was absent. One key, no second spelling.
+it('registers no singular alias — nothing consumes one', function () {
+    expect(app(ResourceRegistry::class)->has('tag'))->toBeFalse();
 });

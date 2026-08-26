@@ -10,11 +10,11 @@ it('registers the tag particle resource over the host-bound model', function () 
 
     expect($resource)->toBeInstanceOf(ParticleResource::class)
         ->and($resource->key)->toBe('tags')
-        ->and($resource->model)->toBe(Tag::class);
+        ->and($resource->modelClass())->toBe(Tag::class);
 });
 
 it('is a no-op when no taxonomy model is bound', function () {
-    config()->set('beam-taxonomy.models.tag', null);
+    config()->set('beam.taxonomy.models.tag', null);
 
     $registry = new ParticleResourceRegistry;
     app()->instance(ParticleResourceRegistry::class, $registry);

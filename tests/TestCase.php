@@ -27,7 +27,7 @@ class TestCase extends Orchestra
         // Stand up beam-core's registry singleton and bind this test's fixture
         // model as the host would, so the provider's guarded registration fires.
         $app->singleton(ParticleResourceRegistry::class);
-        $app['config']->set('beam-taxonomy.models.tag', Tag::class);
-        $app['config']->set('beam-taxonomy.data.tag', null);
+        $app['config']->set('beam.taxonomy.models.tag', Tag::class);
+        $app['config']->set('beam.taxonomy.data.tag', null);
     }
 }
