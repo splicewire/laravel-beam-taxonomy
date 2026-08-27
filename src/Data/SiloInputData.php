@@ -5,6 +5,7 @@ namespace Splicewire\Beam\Taxonomy\Data;
 use Schemastud\DataSchemas\Attributes\Description;
 use Schemastud\DataSchemas\Attributes\Example;
 use Spatie\LaravelData\Optional;
+use Splicewire\Beam\Write\Contracts\MapsToModelAttributes;
 
 /**
  * The silo WRITE shape — the `input:` slot of the `silos` particle resource
@@ -33,7 +34,7 @@ use Spatie\LaravelData\Optional;
  *     {@see toModelAttributes()} — so there is nothing here to clear.
  */
 #[Description('Payload for creating or updating a silo.')]
-class SiloInputData extends Data
+class SiloInputData extends Data implements MapsToModelAttributes
 {
     public function __construct(
         #[Example('Policies')]
