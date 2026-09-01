@@ -4,7 +4,9 @@ namespace Splicewire\Beam\Taxonomy\Sync;
 
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Splicewire\Beam\Taxonomy\Models\Silo;
 use Splicewire\Beam\Taxonomy\Models\Tag;
 
@@ -66,6 +68,7 @@ class TaxonomyPivotSync
     public function __construct(
         protected AuthFactory $auth,
         protected Gate $gate,
+        protected Config $config,
     ) {}
 
     /**
@@ -74,16 +77,26 @@ class TaxonomyPivotSync
      * A null arm means "not supplied" and is left untouched — an omitted key must not clear existing
      * pivot rows, which is why both arms are guarded on `!== null` rather than on emptiness.
      *
+     * @param  Model  $model  the record being written; must use this package's `HasTags`/`HasSilos`
+     *                        traits, which is where `attachTags()` and `silos()` come from. Typed as
+     *                        `Model` rather than an interface because those traits declare no
+     *                        contract to type against — worth stating, since a subject without them
+     *                        fatals here rather than at the declaration.
      * @param  object  $input  the resource InputData; both `->silos` and `->tags` are read
      * @param  bool  $createMissing  mint absent silos/tags when the actor may create them
      */
     public function sync(Model $model, object $input, bool $createMissing = false): void
     {
-        if (($input->tags ?? null) !== null) {
+        // ⚠️ `!== null`, deliberately, and NOT `($input->tags ?? null) !== null`. The null-coalescing
+        // form reads like harmless defensiveness and is a behaviour change: an input DTO that does
+        // not declare the property used to raise, and would now silently skip the arm. Review caught
+        // it. A subject that cannot answer `->tags` is a wiring error at the call site, and the loud
+        // version of that is the one that gets fixed.
+        if ($input->tags !== null) {
             $model->attachTags($this->tags($input->tags, $createMissing));
         }
 
-        if (($input->silos ?? null) !== null) {
+        if ($input->silos !== null) {
             $model->silos()->sync($this->silos($input->silos, $createMissing)->pluck('id'));
         }
     }
@@ -92,7 +105,7 @@ class TaxonomyPivotSync
      * The tag arm. On the create path unresolved entries are dropped (`->filter()`); on the
      * convert-only path the raw input is handed to `attachTags()` untouched, exactly as before.
      */
-    protected function tags(mixed $values, bool $createMissing): mixed
+    protected function tags(mixed $values, bool $createMissing): Collection
     {
         if (! $createMissing) {
             return collect($values);
@@ -108,7 +121,7 @@ class TaxonomyPivotSync
     }
 
     /** The silo arm. Always converted; `$createMissing` only decides whether absent names are minted. */
-    protected function silos(mixed $values, bool $createMissing): mixed
+    protected function silos(mixed $values, bool $createMissing): Collection
     {
         $model = $this->siloModel();
 
@@ -120,10 +133,17 @@ class TaxonomyPivotSync
     /**
      * May the acting user create one of these?
      *
-     * ⚠️ Guest-safe by construction, and it has to be: the extracted code read
-     * `Auth::user()?->can(...)`, so a null user short-circuited to null and the ternary took the
-     * convert-only branch. `Gate::forUser(null)->allows()` is the same answer through a supported
-     * door — a queue/console write with no authenticated user converts, it does not mint.
+     * ⚠️ Guest-safe by the EXPLICIT null check, not by the Gate. The extracted code read
+     * `Auth::user()?->can(...)`, where the null-safe operator short-circuited to null and the ternary
+     * took the convert-only branch; the null check below is that short-circuit, spelled out. An
+     * earlier docblock here credited `Gate::forUser(null)->allows()` with the behaviour, which
+     * describes code that is not in this method — review caught it. Effect is unchanged: a
+     * queue/console write with no authenticated user converts, it does not mint.
+     *
+     * ⚠️ One genuine difference from the extracted code, stated because it is invisible: the ability
+     * is checked against the CONFIGURED model class, where the original named the base class. At the
+     * flagship those are the same class. At a host that binds a subclass the policy resolution now
+     * follows the model the write will actually touch, which is the answer the call site meant.
      */
     protected function may(string $ability, string $model): bool
     {
@@ -135,7 +155,7 @@ class TaxonomyPivotSync
     /** @return class-string<Tag> */
     protected function tagModel(): string
     {
-        $model = config('beam.taxonomy.models.tag');
+        $model = $this->config->get('beam.taxonomy.models.tag');
 
         return is_string($model) && class_exists($model) ? $model : Tag::class;
     }
@@ -143,7 +163,7 @@ class TaxonomyPivotSync
     /** @return class-string<Silo> */
     protected function siloModel(): string
     {
-        $model = config('beam.taxonomy.models.silo');
+        $model = $this->config->get('beam.taxonomy.models.silo');
 
         return is_string($model) && class_exists($model) ? $model : Silo::class;
     }
