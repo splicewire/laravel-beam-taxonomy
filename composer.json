@@ -20,12 +20,11 @@
         "spatie/laravel-data": "^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.16",
         "spatie/laravel-query-builder": "^5.0|^6.0|^7.0",
-        "spatie/laravel-typescript-transformer": "^2.0|^3.0",
+        "spatie/laravel-typescript-transformer": "^3.0",
         "schemastud/laravel-data-schemas": "*",
         "laravel/scout": "^10.0|^11.0",
         "spatie/laravel-sluggable": "^3.5|^4.0",
         "staudenmeir/laravel-adjacency-list": "*",
-        "mehdi-fathi/eloquent-filter": "*",
         "rushing/laravel-schema-convergence": "*"
     },
     "require-dev": {
@@ -66,8 +65,16 @@
             "because": "beam-taxonomy owns the reusable Tag/Silo (BeamTag/BeamSilo) model cone; it depends DOWN on beam + the sync/data-filters/permission-cascade foundations and must NEVER reach UP into tower / satellite / the host App tier.",
             "policy": {
                 "noRequire": [
-                    { "fromPrefix": "splicewire/laravel-beam-taxonomy", "toPrefix": "splicewire/laravel-tower", "because": "the taxonomy cone is reusable by any beam site; it never requires tower/tenancy (host relations + tenant-sync stay in the App\\ subclass shim)" },
-                    { "fromPrefix": "splicewire/laravel-beam-taxonomy", "toPrefix": "splicewire/laravel-satellite", "because": "the foundation never reaches up into the consumer-app tier" }
+                    {
+                        "fromPrefix": "splicewire/laravel-beam-taxonomy",
+                        "toPrefix": "splicewire/laravel-tower",
+                        "because": "the taxonomy cone is reusable by any beam site; it never requires tower/tenancy (host relations + tenant-sync stay in the App\\ subclass shim)"
+                    },
+                    {
+                        "fromPrefix": "splicewire/laravel-beam-taxonomy",
+                        "toPrefix": "splicewire/laravel-satellite",
+                        "because": "the foundation never reaches up into the consumer-app tier"
+                    }
                 ]
             }
         }
@@ -79,5 +86,31 @@
             "pestphp/pest-plugin": true,
             "wikimedia/composer-merge-plugin": true
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/stephenr85/laravel-data-filters.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/stephenr85/laravel-permission-cascade.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/stephenr85/laravel-schema-convergence.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/schemastud/laravel-data-schemas.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/splicewire/laravel-beam.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/splicewire/laravel-beam-sync.git"
+        }
+    ]
 }
