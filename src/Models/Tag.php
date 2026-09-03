@@ -40,11 +40,21 @@ class Tag extends Model implements SchemaVersionedSyncable
     use HasUuids;
     use Searchable;
 
+    /**
+     * Per-tenant index, prefixed by `scout.prefix`.
+     *
+     * Scout applies `config('scout.prefix')` only in the trait's own `searchableAs()`, so an
+     * override drops it silently — the index name simply comes out unprefixed and nothing errors.
+     * This estate deploys onto a box whose Meilisearch is SHARED with another application, and
+     * SCOUT_PREFIX is the whole of the namespacing rule there (splicewire-app
+     * production-relaunch/PLAN.md, "The shared-infra rule"; issue 09). So the prefix has to be
+     * re-applied by hand here, or the config key is a declaration with no consumer.
+     */
     public function searchableAs(): string
     {
         $tenantId = function_exists('tenant') ? (tenant()?->id ?? 'central') : 'central';
 
-        return "{$tenantId}_tags";
+        return config('scout.prefix')."{$tenantId}_tags";
     }
 
     /**
