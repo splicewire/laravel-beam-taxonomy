@@ -150,7 +150,7 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         }
 
         // Silo — the CRUD declaration BeamSilo rides. The host's SiloController (a tier-C
-        // survivor: `?tree` index, withCount show, custom create/delete envelopes) resolves
+        // survivor: withCount show, custom create/delete envelopes) resolves
         // THIS declaration from the registry for its inherited write/read internals, so the
         // silo write/filter surface is declared once, here — not inline in the controller.
         // includes:['fragments'] preserves the eager-load; the child-sync afterWrite was a
@@ -163,6 +163,8 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
                 data: config('beam.taxonomy.data.silo'),
                 input: config('beam.taxonomy.input.silo'),
                 includes: ['fragments'],
+                label: 'Silos',
+                group: 'Taxonomy',
             ));
         }
     }

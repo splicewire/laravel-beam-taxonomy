@@ -4,7 +4,9 @@ namespace Splicewire\Beam\Taxonomy\QueryBuilders;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Rushing\DataFilters\Query\ResourceQuery;
+use Spatie\QueryBuilder\QueryBuilder;
 use Splicewire\Beam\Authorization\RowAuthorization;
 use Splicewire\Beam\Taxonomy\Models\Silo;
 
@@ -13,8 +15,9 @@ class SiloQuery extends ResourceQuery
     protected function baseQuery(Request $request): Builder
     {
         // Resolve the host-bound Silo model so a beam site that rebinds the model still gets the
-        // ownership-scoped, children-counted base query. Falls back to the beam model.
+        // ownership-scoped base query. Falls back to the beam model.
         $model = config('beam.taxonomy.models.silo', Silo::class);
+        Gate::authorize('viewAny', $model);
 
         // ASK the Gate for whatever policy is bound to the resolved model rather than naming a concrete
         // class. `Splicewire\Beam\Taxonomy\Policies\SiloPolicy` was DELETED by this package's own
@@ -39,7 +42,13 @@ class SiloQuery extends ResourceQuery
         // is precisely the case fail-closed exists to catch.
         $query = RowAuthorization::apply($model::query(), $model);
 
-        return $query->withCount('children');
+        return $query;
+    }
+
+    public function applyTo(Builder $base, Request $request): QueryBuilder
+    {
+        // Authorization contributes an ID boundary; counts belong on the final selected rows.
+        return parent::applyTo($base->withCount('children'), $request);
     }
 
     protected function defaultSort(): ?string
