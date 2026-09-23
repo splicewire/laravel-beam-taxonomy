@@ -54,14 +54,11 @@ use Splicewire\Beam\Taxonomy\Models\Tag;
  * resolving the configured class is what the call sites *meant*. At the flagship the config names the
  * base classes, so this is behaviour-identical there and correct at a host that subclasses.
  *
- * ## Behaviour is preserved exactly, including the parts that look like bugs
+ * ## Resolution and creation are separate
  *
- * `$createMissing` is the one divergence axis and it is per-caller: `agents` mints absent silos/tags
- * for an actor who can `create` them and pre-filters unresolved tags before attaching; `context-scopes`
- * and `threads` never create and attach the raw input. Both the `->filter()` on the create path and its
- * ABSENCE on the convert-only path are carried over verbatim — `convertToTags()` can yield nulls for
- * names it cannot resolve, so the two paths genuinely differ in what reaches `attachTags()`. Changing
- * that is a behaviour change, and this is not the ticket for it.
+ * `$createMissing` permits minting absent names only when the actor may create the configured
+ * taxonomy model. Convert-only callers resolve existing rows without minting. Unresolved results
+ * are removed before either pivot write; tags append resolved rows and silos replace the resolved set.
  */
 class TaxonomyPivotSync
 {
@@ -101,19 +98,12 @@ class TaxonomyPivotSync
         }
     }
 
-    /**
-     * The tag arm. On the create path unresolved entries are dropped (`->filter()`); on the
-     * convert-only path the raw input is handed to `attachTags()` untouched, exactly as before.
-     */
+    /** Resolve tag references before attaching; unresolved references never become pivot IDs. */
     protected function tags(mixed $values, bool $createMissing): Collection
     {
-        if (! $createMissing) {
-            return collect($values);
-        }
-
         $model = $this->tagModel();
 
-        $tags = $this->may('create', $model)
+        $tags = $createMissing && $this->may('create', $model)
             ? $model::convertOrCreateToTags($values)
             : $model::convertToTags($values);
 
@@ -125,9 +115,11 @@ class TaxonomyPivotSync
     {
         $model = $this->siloModel();
 
-        return ($createMissing && $this->may('create', $model))
+        $silos = $createMissing && $this->may('create', $model)
             ? $model::convertOrCreateToSilos($values)
             : $model::convertToSilos($values);
+
+        return $silos->filter();
     }
 
     /**
