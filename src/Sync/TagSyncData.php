@@ -2,7 +2,6 @@
 
 namespace Splicewire\Beam\Taxonomy\Sync;
 
-use Spatie\LaravelData\Attributes\MapName;
 use Splicewire\Beam\Taxonomy\Models\Tag;
 use Splicewire\Sync\Transit\SyncData;
 
@@ -11,15 +10,11 @@ use Splicewire\Sync\Transit\SyncData;
  *
  * Relocated DOWN out of `Splicewire\Tower\Tenancy\Sync\Data\TagSyncData` (tower-tenancy) into
  * beam-taxonomy alongside its model (tower-api-dissolution issue 17 U4a). Extends beam-sync's
- * transit base directly. The `#[MapName]` keys and field order are UNCHANGED, so the wire payload
- * is byte-identical to the pre-relocation shape (guarded by SyncPayloadByteStabilityTest). The
- * transitional tower-tenancy class_alias for the old FQCN has been removed — call sites reference
- * this class directly.
+ * transit base directly. Sync payloads use the estate's camelCase wire convention.
  */
 class TagSyncData extends SyncData
 {
     public function __construct(
-        #[MapName('_hash')]
         public string $hash,
         public ?string $name,
         public ?string $slug,
@@ -27,10 +22,8 @@ class TagSyncData extends SyncData
         /**
          * The source's canonical Tag schema `$id` (relative `<name>/<version>`) so the
          * target can reconcile-on-apply (issue 19). A NEW additive protocol key — every
-         * other wire key is byte-identical to the pre-issue-19 shape. Emitted last and
-         * never folded into `_hash`.
+         * other wire key is emitted last and never folded into `hash`.
          */
-        #[MapName(SyncData::SCHEMA_KEY)]
         public ?string $schemaId = null,
     ) {}
 }
