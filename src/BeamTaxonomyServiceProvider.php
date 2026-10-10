@@ -2,6 +2,7 @@
 
 namespace Splicewire\Beam\Taxonomy;
 
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Rushing\PermissionCascade\Support\CascadePolicyRegistrar;
 use Spatie\LaravelPackageTools\Package;
@@ -13,6 +14,7 @@ use Splicewire\Beam\Particle\ParticleResourceRegistry;
 use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
 use Splicewire\Beam\Taxonomy\Models\Silo;
 use Splicewire\Beam\Taxonomy\Models\Tag;
+use Splicewire\Beam\Taxonomy\QueryBuilders\SiloQuery;
 
 /**
  * Wires the beam taxonomy surface. Each taxonomy resource (Tag, Silo …) is a
@@ -163,6 +165,8 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
                 data: config('beam.taxonomy.data.silo'),
                 input: config('beam.taxonomy.input.silo'),
                 includes: ['fragments'],
+                // The declared row scope (integrator ruling c353ac01): the cascade narrowing SiloQuery's base applies.
+                scope: fn (EloquentBuilder $query): EloquentBuilder => SiloQuery::rowScope($query),
                 label: 'Silos',
                 group: 'Taxonomy',
             ));

@@ -3,6 +3,7 @@
 namespace Splicewire\Beam\Taxonomy\QueryBuilders;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Rushing\DataFilters\Query\ResourceQuery;
@@ -12,6 +13,16 @@ use Splicewire\Beam\Taxonomy\Models\Silo;
 
 class SiloQuery extends ResourceQuery
 {
+    /**
+     * The silo row scope: the cascade narrowing for the query's (host-bound) model. Shared with the `silos` registration's
+     * declared `scope` in {@see \Splicewire\Beam\Taxonomy\BeamTaxonomyServiceProvider} (integrator ruling c353ac01): Beam's
+     * read guard does not read a Query class's base as a declaration, and one method keeps the two from drifting.
+     */
+    public static function rowScope(EloquentBuilder $query): EloquentBuilder
+    {
+        return RowAuthorization::apply($query, $query->getModel()::class);
+    }
+
     protected function baseQuery(Request $request): Builder
     {
         // Resolve the host-bound Silo model so a beam site that rebinds the model still gets the
@@ -40,7 +51,7 @@ class SiloQuery extends ResourceQuery
         // exists at 7 and **all 7** bind `ConfiguredModelPolicy`, so this changes nothing anywhere
         // today — it changes what happens the day a host mounts silos without binding a policy, which
         // is precisely the case fail-closed exists to catch.
-        $query = RowAuthorization::apply($model::query(), $model);
+        $query = self::rowScope($model::query());
 
         return $query;
     }
