@@ -15,6 +15,7 @@ use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
 use Splicewire\Beam\Taxonomy\Models\Silo;
 use Splicewire\Beam\Taxonomy\Models\Tag;
 use Splicewire\Beam\Taxonomy\QueryBuilders\SiloQuery;
+use Splicewire\Beam\Taxonomy\QueryBuilders\TagQuery;
 
 /**
  * Wires the beam taxonomy surface. Each taxonomy resource (Tag, Silo …) is a
@@ -148,6 +149,7 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
                 key: 'tags',
                 backing: $tagModel,
                 data: config('beam.taxonomy.data.tag'),
+                scope: fn (EloquentBuilder $query): EloquentBuilder => TagQuery::rowScope($query),
             ));
         }
 
