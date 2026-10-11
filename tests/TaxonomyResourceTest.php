@@ -4,7 +4,10 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
-use Rushing\PermissionCascade\Policies\BaseModelPolicy;
+use Rushing\PermissionCascade\Contracts\CredentialScopeResolver;
+use Rushing\PermissionCascade\Contracts\ReachResolver;
+use Rushing\PermissionCascade\Facades\PermissionNamer;
+use Rushing\PermissionCascade\Policies\ConfiguredModelPolicy;
 use Splicewire\Beam\Authorization\ResourceReadGuard;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
@@ -97,8 +100,6 @@ it('declares the tag row scope that TagQuery applies', function () {
     $provider->register();
     $provider->boot();
     $resource = $registry->get('tags');
-    Gate::policy(Splicewire\Beam\Taxonomy\Models\Tag::class, TaxonomyMemberTagPolicy::class);
-
     expect(app(ResourceReadGuard::class)->policyBound($resource))->toBeTrue()
         ->and(app(ResourceReadGuard::class)->declaresScope($resource))->toBeTrue();
 
@@ -107,9 +108,19 @@ it('declares the tag row scope that TagQuery applies', function () {
     expect($declared->toRawSql())->toBe(TagQuery::rowScope(Splicewire\Beam\Taxonomy\Models\Tag::query())->toRawSql());
 });
 
-it('keeps a member tag reader on the same row set after declaration', function () {
+it('keeps every landed tag reader on the same all-row set after declaration', function () {
     $model = Splicewire\Beam\Taxonomy\Models\Tag::class;
+    Schema::dropIfExists('userables');
+    Schema::dropIfExists('users');
     Schema::dropIfExists('tags');
+    Schema::create('users', function ($table): void {
+        $table->unsignedBigInteger('id')->primary();
+    });
+    Schema::create('userables', function ($table): void {
+        $table->unsignedBigInteger('user_id');
+        $table->uuid('userable_id');
+        $table->string('userable_type');
+    });
     Schema::create('tags', function ($table): void {
         $table->uuid('id')->primary();
         $table->string('name');
@@ -130,29 +141,74 @@ it('keeps a member tag reader on the same row set after declaration', function (
     $provider = new BeamTaxonomyServiceProvider(app());
     $provider->register();
     $provider->boot();
-    Gate::policy($model, TaxonomyMemberTagPolicy::class);
     $resource = $registry->get('tags');
 
-    $existing = $model::query()->orderBy('name')->pluck('name')->all();
-    $declared = ($resource->scope)($model::query(), null)->orderBy('name')->pluck('name')->all();
+    $policyKey = 'permission-cascade-policy:'.$model;
+    app()->bind($policyKey, fn () => new ConfiguredModelPolicy($model));
+    Gate::policy($model, $policyKey);
+    app()->instance(ReachResolver::class, new TaxonomyNoReachResolver);
+    app()->instance(CredentialScopeResolver::class, new TaxonomyUnscopedCredential);
+    config()->set('permission-cascade.user_model', TaxonomyPolicyActor::class);
 
-    expect($existing)->toBe(['Alpha', 'Beta'])
-        ->and($declared)->toBe($existing);
+    $view = PermissionNamer::assemble($model, 'view');
+    $ownView = PermissionNamer::assemble($model, 'own', 'view');
+    Gate::define($view, fn (TaxonomyPolicyActor $actor): bool => $actor->tagAbility === $view);
+    Gate::define($ownView, fn (TaxonomyPolicyActor $actor): bool => $actor->tagAbility === $ownView);
+
+    $landed = ['Alpha', 'Beta'];
+    foreach (['owner', 'admin', 'member'] as $role) {
+        $actor = (new TaxonomyPolicyActor)->forceFill(['id' => strlen($role)]);
+        $actor->role = $role;
+        $actor->tagAbility = $view;
+        $this->actingAs($actor);
+
+        expect(Gate::forUser($actor)->allows('viewAny', $model))->toBeTrue()
+            ->and(($resource->scope)($model::query(), null)->orderBy('name')->pluck('name')->all())->toBe($landed);
+    }
+
+    $ownReader = (new TaxonomyPolicyActor)->forceFill(['id' => 99]);
+    $ownReader->role = 'custom-own-view';
+    $ownReader->tagAbility = $ownView;
+    $this->actingAs($ownReader);
+
+    expect(Gate::forUser($ownReader)->allows('viewAny', $model))->toBeTrue()
+        ->and(($resource->scope)($model::query(), null)->orderBy('name')->pluck('name')->all())->toBe($landed);
 });
 
 class TaxonomyHostSilo extends Silo {}
 
 class TaxonomyPlainSiloPolicy {}
 
-class TaxonomyMemberTagPolicy extends BaseModelPolicy
+class TaxonomyPolicyActor extends User
 {
-    public function viewAny(Illuminate\Contracts\Auth\Authenticatable $user): bool
+    public $timestamps = false;
+
+    protected $table = 'users';
+
+    protected $guarded = [];
+
+    public string $role;
+
+    public string $tagAbility;
+}
+
+class TaxonomyNoReachResolver implements ReachResolver
+{
+    public function grants(?string $tier, string $ability, ?Illuminate\Contracts\Auth\Authenticatable $viewer): bool
     {
-        return true;
+        return false;
     }
 
-    public function scopeForUser($query, $user = null)
+    public function listableTiers(?Illuminate\Contracts\Auth\Authenticatable $viewer): array
     {
-        return $query;
+        return [];
+    }
+}
+
+class TaxonomyUnscopedCredential implements CredentialScopeResolver
+{
+    public function resolve(): ?array
+    {
+        return null;
     }
 }

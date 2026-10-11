@@ -4,14 +4,13 @@ namespace Splicewire\Beam\Taxonomy\QueryBuilders;
 
 use Illuminate\Database\Eloquent\Builder;
 use Rushing\DataFilters\Query\ResourceQuery;
-use Splicewire\Beam\Authorization\RowAuthorization;
 
 class TagQuery extends ResourceQuery
 {
-    /** The cascade's row population, shared by the registration and filtered list query. */
+    /** Tags are a shared catalog: declare the landed all-row population without narrowing own-view readers. */
     public static function rowScope(Builder $query): Builder
     {
-        return RowAuthorization::apply($query, $query->getModel()::class);
+        return $query;
     }
 
     protected function defaultSort(): ?string
