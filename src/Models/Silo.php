@@ -339,13 +339,19 @@ class Silo extends Model implements SchemaVersionedSyncable
             }
         }
 
-        return static::updateOrCreate(
+        $silo = static::updateOrCreate(
             ['slug' => $payload->slug],
             [
                 'name' => $payload->name,
                 'parent_id' => $parentId,
             ]
         );
+
+        if (isset($config['user_id'])) {
+            $silo->user()->sync([$config['user_id']]);
+        }
+
+        return $silo;
     }
 
     public function syncHash(): string
