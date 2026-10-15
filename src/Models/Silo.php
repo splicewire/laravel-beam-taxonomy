@@ -339,7 +339,13 @@ class Silo extends Model implements SchemaVersionedSyncable
             }
         }
 
-        $silo = static::updateOrCreate(
+        // Slugs are not unique: an import may reuse only the target owner's row.
+        $query = static::query();
+        if (isset($config['user_id'])) {
+            $query->whereUser($config['user_id']);
+        }
+
+        $silo = $query->updateOrCreate(
             ['slug' => $payload->slug],
             [
                 'name' => $payload->name,
@@ -347,7 +353,7 @@ class Silo extends Model implements SchemaVersionedSyncable
             ]
         );
 
-        if (isset($config['user_id'])) {
+        if ($silo->wasRecentlyCreated && isset($config['user_id'])) {
             $silo->user()->sync([$config['user_id']]);
         }
 

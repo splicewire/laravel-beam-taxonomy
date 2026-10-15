@@ -69,17 +69,33 @@ it('lists an imported silo for the configured owner but not an unrelated member'
         ->and($silo->fresh()->user()->pluck('users.id')->all())->toBe([$this->owner->id]);
 });
 
-it('replaces an existing owner with exactly the configured import owner', function () {
+it('creates a separate silo instead of taking an unrelated owners same slug', function () {
     $this->actingAs($this->other);
     $existing = Silo::fromSyncPayload($this->payload);
-    expect($existing->fresh()->user()->pluck('users.id')->all())->toBe([$this->other->id]);
+    $before = $existing->fresh()->getAttributes();
 
     $imported = Silo::fromSyncPayload($this->payload, ['user_id' => $this->owner->id]);
-    expect($imported->id)->toBe($existing->id)
+    expect($imported->id)->not->toBe($existing->id)
+        ->and($imported->slug)->toBe($existing->slug)
+        ->and($existing->fresh()->getAttributes())->toBe($before)
+        ->and($existing->fresh()->user()->pluck('users.id')->all())->toBe([$this->other->id])
         ->and($imported->fresh()->user()->pluck('users.id')->all())->toBe([$this->owner->id]);
-    expect(SiloQuery::rowScope(Silo::query())->pluck('id')->all())->toBe([]);
+    expect(SiloQuery::rowScope(Silo::query())->pluck('id')->all())->toBe([$existing->id]);
     $this->actingAs($this->owner);
     expect(SiloQuery::rowScope(Silo::query())->pluck('id')->all())->toBe([$imported->id]);
+});
+
+it('reuses the targets own same slug without changing its ownership', function () {
+    $this->actingAs($this->owner);
+    $existing = Silo::fromSyncPayload($this->payload);
+    $existing->user()->attach($this->other->id);
+    $owners = $existing->user()->orderBy('users.id')->pluck('users.id')->all();
+    $this->actingAs($this->other);
+    $imported = Silo::fromSyncPayload($this->payload, ['user_id' => $this->owner->id]);
+
+    expect($imported->id)->toBe($existing->id)
+        ->and(Silo::count())->toBe(1)
+        ->and($imported->fresh()->user()->orderBy('users.id')->pluck('users.id')->all())->toBe($owners);
 });
 
 it('preserves existing ownership when import config has no user id', function () {
