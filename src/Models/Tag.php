@@ -12,6 +12,7 @@ use Laravel\Scout\Searchable;
 use Rushing\PermissionCascade\Attributes\UseCascadePolicy;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Splicewire\Beam\Realm\Contracts\TenancyContext;
 use Splicewire\Beam\Taxonomy\Data\TagData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
 use Splicewire\Beam\Taxonomy\Sync\TagSyncData;
@@ -52,7 +53,7 @@ class Tag extends Model implements SchemaVersionedSyncable
      */
     public function searchableAs(): string
     {
-        $tenantId = function_exists('tenant') ? (tenant()?->id ?? 'central') : 'central';
+        $tenantId = app(TenancyContext::class)->currentTenantId() ?? 'central';
 
         return config('scout.prefix')."{$tenantId}_tags";
     }

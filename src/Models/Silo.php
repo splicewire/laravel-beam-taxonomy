@@ -12,6 +12,7 @@ use Rushing\PermissionCascade\Attributes\UseCascadePolicy;
 use Rushing\PermissionCascade\Concerns\HasVisibility;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Splicewire\Beam\Realm\Contracts\TenancyContext;
 use Splicewire\Beam\Taxonomy\Data\SiloData;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasTags;
 use Splicewire\Beam\Taxonomy\Models\Concerns\HasUser;
@@ -69,7 +70,7 @@ class Silo extends Model implements SchemaVersionedSyncable
      */
     public function searchableAs(): string
     {
-        $tenantId = function_exists('tenant') ? (tenant()?->id ?? 'central') : 'central';
+        $tenantId = app(TenancyContext::class)->currentTenantId() ?? 'central';
 
         return config('scout.prefix')."{$tenantId}_silos";
     }

@@ -38,6 +38,14 @@ class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        // The scout-prefix sites read the TenancyContext port (B6-1, 2026-10-18); in a real host
+        // beam's provider bindIfs this exact central default, but this harness boots only the
+        // providers getPackageProviders names — so it supplies the same default the real world gets.
+        $app->bind(
+            \Splicewire\Beam\Realm\Contracts\TenancyContext::class,
+            \Splicewire\Beam\Realm\CentralTenancyContext::class,
+        );
+
         // Stand up beam-core's registry singleton and bind this test's fixture
         // model as the host would, so the provider's guarded registration fires.
         $app->singleton(ParticleResourceRegistry::class);
