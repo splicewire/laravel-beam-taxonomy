@@ -8,6 +8,7 @@ use Laravel\Scout\ScoutServiceProvider;
 use Rushing\PermissionCascade\PermissionCascadeServiceProvider;
 use Spatie\Sluggable\SluggableServiceProvider;
 use Splicewire\Beam\Taxonomy\Models\Silo;
+use Splicewire\Beam\Taxonomy\Models\Tag;
 
 /*
  * EP-42 (2026-10-26): spatie/laravel-sluggable 4.0.5 gave HasSlug a resolveRouteBindingQuery, which laravel/framework
@@ -70,4 +71,8 @@ it('answers a malformed key as not found, before any query', function () {
 
 it('still binds by slug where a route names the slug field', function () {
     expect((new Silo)->resolveRouteBinding('field-notes', 'slug')?->id)->toBe($this->silo->id);
+});
+
+it('makes the same choice on Tag, which uses both traits too', function () {
+    expect(fn () => (new Tag)->resolveRouteBinding('not-a-uuid'))->toThrow(ModelNotFoundException::class);
 });
