@@ -54,7 +54,12 @@ class Silo extends Model implements SchemaVersionedSyncable
     use HasSlug;
     use HasTags;
     use HasUser;
-    use HasUuids;
+    // HasSlug (spatie/laravel-sluggable 4.0.5) and HasUuids (laravel/framework 13.38) both define resolveRouteBindingQuery,
+    // and without a choice PHP refuses to load the class. A silo binds by its uuid key, and its slug options leave
+    // self-healing URLs off, so HasSlug's would only defer to the parent: HasUuids' answers a malformed key as not found.
+    use HasUuids {
+        HasUuids::resolveRouteBindingQuery insteadof HasSlug;
+    }
     use HasVisibility;
     use Searchable;
 

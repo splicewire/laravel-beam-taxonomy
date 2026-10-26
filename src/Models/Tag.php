@@ -38,7 +38,11 @@ class Tag extends Model implements SchemaVersionedSyncable
     use HasFactory;
     use HasSlug;
     use HasUser;
-    use HasUuids;
+    // As on Silo: HasSlug (sluggable 4.0.5) and HasUuids (framework 13.38) both define resolveRouteBindingQuery. A tag
+    // binds by its uuid key with self-healing URLs off, so it takes HasUuids' (a malformed key is not found).
+    use HasUuids {
+        HasUuids::resolveRouteBindingQuery insteadof HasSlug;
+    }
     use Searchable;
 
     /**
