@@ -35,7 +35,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        ConvergentTable::named('silos')
+        ConvergentTable::named(config('beam.taxonomy.tables.silos', 'silos'))
             ->define(function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->string('name');
@@ -46,9 +46,9 @@ return new class extends Migration
             })
             ->assert();
 
-        ConvergentTable::named('siloables')
+        ConvergentTable::named(config('beam.taxonomy.tables.siloables', 'siloables'))
             ->define(function (Blueprint $table) {
-                $table->foreignUuid('silo_id')->constrained()->cascadeOnDelete();
+                $table->foreignUuid('silo_id')->constrained(config('beam.taxonomy.tables.silos', 'silos'))->cascadeOnDelete();
                 $table->uuid('siloable_id');
                 $table->string('siloable_type');
                 $table->unique(['silo_id', 'siloable_id', 'siloable_type']);
@@ -58,7 +58,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('siloables');
-        Schema::dropIfExists('silos');
+        Schema::dropIfExists(config('beam.taxonomy.tables.siloables', 'siloables'));
+        Schema::dropIfExists(config('beam.taxonomy.tables.silos', 'silos'));
     }
 };

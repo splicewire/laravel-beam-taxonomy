@@ -26,3 +26,24 @@ Route::particleResource('tags', 'tag', ['only' => ['index']]);
 > Provenance: extracted during `tower-api-dissolution` (issue 02) as the reference DISSOLVE
 > pattern. The physical BeamTag/BeamSilo model-cone relocation into this package is a
 > sequenced follow-on (issue 05); the config seam is already correct.
+
+### Physical table names
+
+Hosts that already own unrelated taxonomy tables can set these keys in their
+`config/beam/taxonomy.php` before publishing and running the migrations:
+
+```php
+ 'tables' => [
+     'tags' => 'beam_tags',
+     'taggables' => 'beam_taggables',
+     'silos' => 'beam_silos',
+     'siloables' => 'beam_siloables',
+ ],
+```
+
+The defaults remain `tags`, `taggables`, `silos` and `siloables`. The models,
+relations and published migrations use the configured names; resource keys and
+search index names stay unchanged. Explicit model `$table` overrides still take
+precedence. This setting does not rename tables or move existing data. Publish
+the package's native migration stubs after selecting the names, and keep the
+configuration stable throughout migration and rollback.

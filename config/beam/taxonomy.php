@@ -27,6 +27,15 @@ return [
     | published `config/beam/taxonomy.php`.
     */
 
+    // Physical storage names only; resource keys and search indexes stay tags/silos.
+    // Set these before publishing/running migrations; changing them does not move existing data.
+    'tables' => [
+        'tags' => 'tags',
+        'taggables' => 'taggables',
+        'silos' => 'silos',
+        'siloables' => 'siloables',
+    ],
+
     'models' => [
         'tag' => Tag::class,
         'silo' => Silo::class,

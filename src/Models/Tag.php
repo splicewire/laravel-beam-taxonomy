@@ -38,12 +38,18 @@ class Tag extends Model implements SchemaVersionedSyncable
     use HasFactory;
     use HasSlug;
     use HasUser;
+
     // As on Silo: HasSlug (sluggable 4.0.5) and HasUuids (framework 13.38) both define resolveRouteBindingQuery. A tag
     // binds by its uuid key with self-healing URLs off, so it takes HasUuids' (a malformed key is not found).
     use HasUuids {
         HasUuids::resolveRouteBindingQuery insteadof HasSlug;
     }
     use Searchable;
+
+    public function getTable()
+    {
+        return $this->table ?? config('beam.taxonomy.tables.tags', 'tags');
+    }
 
     /**
      * Per-tenant index, prefixed by `scout.prefix`.

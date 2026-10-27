@@ -26,7 +26,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        ConvergentTable::named('tags')
+        ConvergentTable::named(config('beam.taxonomy.tables.tags', 'tags'))
             ->define(function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->string('name', 512);
@@ -36,9 +36,9 @@ return new class extends Migration
             })
             ->assert();
 
-        ConvergentTable::named('taggables')
+        ConvergentTable::named(config('beam.taxonomy.tables.taggables', 'taggables'))
             ->define(function (Blueprint $table) {
-                $table->foreignUuid('tag_id')->constrained()->cascadeOnDelete();
+                $table->foreignUuid('tag_id')->constrained(config('beam.taxonomy.tables.tags', 'tags'))->cascadeOnDelete();
                 $table->uuid('taggable_id');
                 $table->string('taggable_type');
                 $table->unique(['tag_id', 'taggable_id', 'taggable_type']);
@@ -48,7 +48,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('taggables');
-        Schema::dropIfExists('tags');
+        Schema::dropIfExists(config('beam.taxonomy.tables.taggables', 'taggables'));
+        Schema::dropIfExists(config('beam.taxonomy.tables.tags', 'tags'));
     }
 };

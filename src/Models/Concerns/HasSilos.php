@@ -11,12 +11,12 @@ trait HasSilos
 {
     public function silos(): MorphToMany
     {
-        return $this->morphToMany(Silo::class, 'siloable');
+        return $this->morphToMany(Silo::class, 'siloable', config('beam.taxonomy.tables.siloables', 'siloables'));
     }
 
     public function recursiveSilos()
     {
-        return $this->morphToManyOfDescendantsAndSelf(Silo::class, 'siloable');
+        return $this->morphToManyOfDescendantsAndSelf(Silo::class, 'siloable', config('beam.taxonomy.tables.siloables', 'siloables'));
     }
 
     public function scopeWhereInSilos(Builder $query, Silo|Collection $silos, $deep = true)

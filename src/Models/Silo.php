@@ -54,6 +54,7 @@ class Silo extends Model implements SchemaVersionedSyncable
     use HasSlug;
     use HasTags;
     use HasUser;
+
     // HasSlug (spatie/laravel-sluggable 4.0.5) and HasUuids (laravel/framework 13.38) both define resolveRouteBindingQuery,
     // and without a choice PHP refuses to load the class. A silo binds by its uuid key, and its slug options leave
     // self-healing URLs off, so HasSlug's would only defer to the parent: HasUuids' answers a malformed key as not found.
@@ -62,6 +63,11 @@ class Silo extends Model implements SchemaVersionedSyncable
     }
     use HasVisibility;
     use Searchable;
+
+    public function getTable()
+    {
+        return $this->table ?? config('beam.taxonomy.tables.silos', 'silos');
+    }
 
     /**
      * Per-tenant index, prefixed by `scout.prefix`.
@@ -171,7 +177,8 @@ class Silo extends Model implements SchemaVersionedSyncable
 
     public function scopeWhereName(Builder $query, $name)
     {
-        $query->addSelect(DB::raw('levenshtein(tags.name, '.DB::escape($name).') as name_diff'));
+        $tagName = DB::connection()->getQueryGrammar()->wrap(config('beam.taxonomy.tables.tags', 'tags').'.name');
+        $query->addSelect(DB::raw('levenshtein('.$tagName.', '.DB::escape($name).') as name_diff'));
     }
 
     public static function findFromString($name)

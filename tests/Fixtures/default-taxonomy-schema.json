@@ -1,0 +1,56 @@
+[
+    {
+        "type": "index",
+        "name": "siloables_silo_id_siloable_id_siloable_type_unique",
+        "tbl_name": "siloables",
+        "sql": "CREATE UNIQUE INDEX \"siloables_silo_id_siloable_id_siloable_type_unique\" on \"siloables\" (\"silo_id\", \"siloable_id\", \"siloable_type\")"
+    },
+    {
+        "type": "index",
+        "name": "silos_parent_id_index",
+        "tbl_name": "silos",
+        "sql": "CREATE INDEX \"silos_parent_id_index\" on \"silos\" (\"parent_id\")"
+    },
+    {
+        "type": "index",
+        "name": "sqlite_autoindex_silos_1",
+        "tbl_name": "silos",
+        "sql": null
+    },
+    {
+        "type": "index",
+        "name": "sqlite_autoindex_tags_1",
+        "tbl_name": "tags",
+        "sql": null
+    },
+    {
+        "type": "index",
+        "name": "taggables_tag_id_taggable_id_taggable_type_unique",
+        "tbl_name": "taggables",
+        "sql": "CREATE UNIQUE INDEX \"taggables_tag_id_taggable_id_taggable_type_unique\" on \"taggables\" (\"tag_id\", \"taggable_id\", \"taggable_type\")"
+    },
+    {
+        "type": "table",
+        "name": "siloables",
+        "tbl_name": "siloables",
+        "sql": "CREATE TABLE \"siloables\" (\"silo_id\" varchar not null, \"siloable_id\" varchar not null, \"siloable_type\" varchar not null, foreign key(\"silo_id\") references \"silos\"(\"id\") on delete cascade)"
+    },
+    {
+        "type": "table",
+        "name": "silos",
+        "tbl_name": "silos",
+        "sql": "CREATE TABLE \"silos\" (\"id\" varchar not null, \"name\" varchar not null, \"slug\" varchar not null, \"parent_id\" varchar, \"name_path\" varchar, \"created_at\" datetime, \"updated_at\" datetime, primary key (\"id\"))"
+    },
+    {
+        "type": "table",
+        "name": "taggables",
+        "tbl_name": "taggables",
+        "sql": "CREATE TABLE \"taggables\" (\"tag_id\" varchar not null, \"taggable_id\" varchar not null, \"taggable_type\" varchar not null, foreign key(\"tag_id\") references \"tags\"(\"id\") on delete cascade)"
+    },
+    {
+        "type": "table",
+        "name": "tags",
+        "tbl_name": "tags",
+        "sql": "CREATE TABLE \"tags\" (\"id\" varchar not null, \"name\" varchar not null, \"slug\" varchar not null, \"type\" varchar, \"created_at\" datetime, \"updated_at\" datetime, primary key (\"id\"))"
+    }
+]

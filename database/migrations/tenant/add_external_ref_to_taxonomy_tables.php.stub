@@ -24,20 +24,26 @@ return new class extends Migration
 {
     public function up(): void
     {
-        foreach (['tags', 'silos'] as $table) {
+        foreach (['tags', 'silos'] as $name) {
+            $table = config('beam.taxonomy.tables.'.$name, $name);
+            $grammar = DB::connection()->getQueryGrammar();
+            $index = $grammar->wrap($table.'_external_ref_unique');
             Schema::table($table, function (Blueprint $t) {
                 $t->string('external_ref')->nullable()->after('slug');
                 $t->string('source_authority')->nullable()->after('external_ref');
             });
 
-            DB::statement("CREATE UNIQUE INDEX {$table}_external_ref_unique ON {$table} (external_ref) WHERE external_ref IS NOT NULL");
+            DB::statement("CREATE UNIQUE INDEX {$index} ON ".$grammar->wrapTable($table)." (external_ref) WHERE external_ref IS NOT NULL");
         }
     }
 
     public function down(): void
     {
-        foreach (['tags', 'silos'] as $table) {
-            DB::statement("DROP INDEX IF EXISTS {$table}_external_ref_unique");
+        foreach (['tags', 'silos'] as $name) {
+            $table = config('beam.taxonomy.tables.'.$name, $name);
+            $grammar = DB::connection()->getQueryGrammar();
+            $index = $grammar->wrap($table.'_external_ref_unique');
+            DB::statement("DROP INDEX IF EXISTS {$index}");
 
             Schema::table($table, function (Blueprint $t) {
                 $t->dropColumn(['external_ref', 'source_authority']);

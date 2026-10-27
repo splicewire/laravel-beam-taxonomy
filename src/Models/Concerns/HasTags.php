@@ -56,7 +56,7 @@ trait HasTags
      */
     public function tags(): MorphToMany
     {
-        return $this->morphToMany(static::tagModel(), 'taggable');
+        return $this->morphToMany(static::tagModel(), 'taggable', config('beam.taxonomy.tables.taggables', 'taggables'));
     }
 
     public function setTagsAttribute(string|array|ArrayAccess $tags)
@@ -79,7 +79,7 @@ trait HasTags
 
         collect($tags)->each(function ($tag) use ($query) {
             $query->whereHas('tags', function (Builder $query) use ($tag) {
-                $query->where('tags.id', $tag->id ?? 0);
+                $query->where($query->getModel()->getQualifiedKeyName(), $tag->id ?? 0);
             });
         });
 
@@ -97,7 +97,7 @@ trait HasTags
             ->whereHas('tags', function (Builder $query) use ($tags) {
                 $tagIds = collect($tags)->pluck('id');
 
-                $query->whereIn('tags.id', $tagIds);
+                $query->whereIn($query->getModel()->getQualifiedKeyName(), $tagIds);
             });
     }
 
@@ -112,7 +112,7 @@ trait HasTags
             ->whereDoesntHave('tags', function (Builder $query) use ($tags) {
                 $tagIds = collect($tags)->pluck('id');
 
-                $query->whereIn('tags.id', $tagIds);
+                $query->whereIn($query->getModel()->getQualifiedKeyName(), $tagIds);
             });
     }
 
