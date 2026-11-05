@@ -11,7 +11,6 @@ use Splicewire\Beam\Doctor\BeamDoctorManifest;
 use Splicewire\Beam\Install\BeamInstallManifest;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
-use Splicewire\Beam\Taxonomy\Doctor\BeamTaxonomyMigrationsAudit;
 use Splicewire\Beam\Taxonomy\Models\Silo;
 use Splicewire\Beam\Taxonomy\Models\Tag;
 use Splicewire\Beam\Taxonomy\QueryBuilders\SiloQuery;
@@ -78,9 +77,9 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
         }
 
         if ($this->app->bound(BeamDoctorManifest::class)) {
-            $this->app->make(BeamDoctorManifest::class)->register(
+            $this->app->make(BeamDoctorManifest::class)->stubMigrations(
                 'splicewire/laravel-beam-taxonomy',
-                BeamTaxonomyMigrationsAudit::class,
+                self::class,
             );
         }
     }
