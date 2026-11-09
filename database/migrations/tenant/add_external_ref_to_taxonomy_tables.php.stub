@@ -33,7 +33,7 @@ return new class extends Migration
                 $t->string('source_authority')->nullable()->after('external_ref');
             });
 
-            DB::statement("CREATE UNIQUE INDEX {$index} ON ".$grammar->wrapTable($table)." (external_ref) WHERE external_ref IS NOT NULL");
+            DB::statement("CREATE UNIQUE INDEX {$index} ON ".$grammar->wrapTable($table).' (external_ref) WHERE external_ref IS NOT NULL');
         }
     }
 
