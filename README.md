@@ -4,24 +4,30 @@ The reusable **Tag / Silo** (BeamTag / BeamSilo) taxonomy surface for beam sites
 
 Ships taxonomy resources as declared `ParticleResource`s registered into beam-core's
 `ParticleResourceRegistry`, so a host gets a schema-typed CRUD surface with **no controller
-code** — mounted via `Route::particleResource($uri, $key)`.
+code** — mounted through the `Particle` facade or the package's root export.
 
 Concrete models and read-Data classes are **host-bound via config**
-(`config/beam-taxonomy.php`), so this foundation-tier package never depends up on a host's
+(`config/beam/taxonomy.php`), so this foundation-tier package never depends up on a host's
 model tier.
 
 ## Resources
 
 | Key   | Model (host-bound)              | Status                                   |
 | ----- | ------------------------------- | ---------------------------------------- |
-| `tag` | `beam.taxonomy.models.tag`      | read-only (index) — dissolved from `TagController` |
-| `silo`| `beam.taxonomy.models.silo`     | pending (issue 05)                        |
+| `tags` | `beam.taxonomy.models.tag`      | read-only (index) — dissolved from `TagController` |
+| `silos`| `beam.taxonomy.models.silo`     | pending (issue 05)                        |
 
 ## Mount
 
 ```php
-Route::particleResource('tags', 'tag', ['only' => ['index']]);
+// Legacy host exposure, kept during expansion:
+Particle::mount('tags')->only(['index']);
+
+// Package-default root, inside the host's authenticated tenant group:
+TaxonomyRoutes::mount();
 ```
+
+See [the API root contract](docs/package-api-root.md) for configuration and Tower's specialized silo export.
 
 > Provenance: extracted during `tower-api-dissolution` (issue 02) as the reference DISSOLVE
 > pattern. The physical BeamTag/BeamSilo model-cone relocation into this package is a

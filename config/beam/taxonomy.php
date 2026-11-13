@@ -7,6 +7,7 @@ use Splicewire\Beam\Taxonomy\Models\Silo;
 use Splicewire\Beam\Taxonomy\Models\Tag;
 
 return [
+    'api_root' => env('BEAM_TAXONOMY_API_ROOT', 'beam/taxonomy'),
     /*
     |--------------------------------------------------------------------------
     | Host-bound taxonomy models
