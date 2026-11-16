@@ -5,6 +5,7 @@ namespace Splicewire\Beam\Taxonomy\Data;
 use Schemastud\DataSchemas\Attributes\Description;
 use Schemastud\DataSchemas\Attributes\Example;
 use Spatie\LaravelData\Optional;
+use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 use Splicewire\Beam\Write\Contracts\MapsToModelAttributes;
 
 /**
@@ -34,6 +35,7 @@ use Splicewire\Beam\Write\Contracts\MapsToModelAttributes;
  *     {@see toModelAttributes()} — so there is nothing here to clear.
  */
 #[Description('Payload for creating or updating a silo.')]
+#[TypeScript]
 class SiloInputData extends Data implements MapsToModelAttributes
 {
     public function __construct(
