@@ -8,6 +8,7 @@ use Rushing\PermissionCascade\Support\CascadePolicyRegistrar;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Splicewire\Beam\Doctor\BeamDoctorManifest;
+use Splicewire\Beam\Graph\Edges\ParentEdge;
 use Splicewire\Beam\Install\BeamInstallManifest;
 use Splicewire\Beam\Particle\ParticleResource;
 use Splicewire\Beam\Particle\ParticleResourceRegistry;
@@ -170,6 +171,10 @@ class BeamTaxonomyServiceProvider extends PackageServiceProvider
                 scope: fn (EloquentBuilder $query): EloquentBuilder => SiloQuery::rowScope($query),
                 label: 'Silos',
                 group: 'Taxonomy',
+                // graph-operations 05 (D7): silos is the first consumer. The `parent_id` tree declares its
+                // edges in one slot; beam derives the four graph read operations over the same row-scoped
+                // query. `label: 'name'` labels nodes from the silo name (04 label ruling), id where null.
+                graph: new ParentEdge('parent_id', label: 'name'),
             ));
         }
     }
